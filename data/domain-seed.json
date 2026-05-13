@@ -1,0 +1,15 @@
+{
+  "description": "IvyEd MVP local seed data generated from the supplied domain model. The TypeScript source of truth lives in src/data/seed.ts.",
+  "generatedAt": "2026-05-07T00:00:00.000Z",
+  "aggregates": ["User", "Resource", "Asset", "BehaviorLog", "Rule"],
+  "invariants": [
+    "BehaviorLog is the only domain-event producer.",
+    "Rule Engine consumes behavior events and writes Asset records.",
+    "Asset is append-only; vouchers and privileges are never physically deleted.",
+    "Stats may only read User and Asset projections."
+  ],
+  "localCity": {
+    "cityCode": "331000",
+    "cityName": "台州"
+  }
+}

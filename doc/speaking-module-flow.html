@@ -1,0 +1,1005 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>口语学习模块 | 完整流程架构图</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --paper: #eef6ff;
+      --warm: #fffaf4;
+      --panel: rgba(255, 255, 255, 0.68);
+      --panel-strong: rgba(255, 255, 255, 0.84);
+      --ink: #172033;
+      --muted: #61708a;
+      --line: rgba(150, 178, 215, 0.62);
+      --arrow: #174075;
+      --arrow-glow: rgba(24, 90, 168, 0.22);
+      --glass-border: rgba(255, 255, 255, 0.78);
+      --glass-line: rgba(115, 153, 205, 0.34);
+      --glass-highlight: rgba(255, 255, 255, 0.58);
+      --blue: #0f68d8;
+      --green: #16a56b;
+      --orange: #f08125;
+      --red: #e84f61;
+      --purple: #7057df;
+      --teal: #0797a8;
+      --radius: 12px;
+      --shadow: 0 18px 52px rgba(62, 108, 181, 0.16);
+      --soft-shadow: 0 12px 32px rgba(57, 101, 167, 0.11);
+      --cell-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.46));
+      --cell-inner: linear-gradient(145deg, rgba(255, 255, 255, 0.86), rgba(255, 255, 255, 0.42));
+      --header-fill: rgba(255, 255, 255, 0.42);
+      --chip-bg: rgba(255, 255, 255, 0.52);
+      --stage-fill: linear-gradient(145deg, rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.44));
+      --decision-fill: rgba(255, 255, 255, 0.78);
+      --blur: 22px;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body[data-theme="dark"] {
+      color-scheme: dark;
+      --paper: #050712;
+      --warm: #0a1024;
+      --panel: rgba(8, 13, 31, 0.72);
+      --panel-strong: rgba(10, 18, 41, 0.9);
+      --ink: #f3fbff;
+      --muted: #9bb7d4;
+      --line: rgba(88, 236, 255, 0.25);
+      --arrow: #66f6ff;
+      --arrow-glow: rgba(102, 246, 255, 0.72);
+      --glass-border: rgba(117, 243, 255, 0.36);
+      --glass-line: rgba(134, 151, 255, 0.3);
+      --glass-highlight: rgba(125, 255, 235, 0.18);
+      --blue: #43d8ff;
+      --green: #4dff9d;
+      --orange: #ffb545;
+      --red: #ff5b8a;
+      --purple: #b074ff;
+      --teal: #42ffe6;
+      --shadow: 0 0 36px rgba(67, 216, 255, 0.18);
+      --soft-shadow: 0 0 26px rgba(77, 255, 157, 0.11);
+      --cell-bg: linear-gradient(145deg, rgba(7, 13, 31, 0.9), rgba(13, 18, 43, 0.68));
+      --cell-inner: linear-gradient(145deg, rgba(12, 20, 46, 0.95), rgba(8, 12, 31, 0.78));
+      --header-fill: rgba(6, 11, 28, 0.68);
+      --chip-bg: rgba(7, 16, 38, 0.82);
+      --stage-fill: linear-gradient(145deg, rgba(14, 23, 54, 0.96), rgba(7, 12, 31, 0.78));
+      --decision-fill: rgba(9, 16, 39, 0.94);
+      --blur: 18px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 18% 0%, color-mix(in srgb, var(--blue) 18%, transparent), transparent 30%),
+        radial-gradient(circle at 86% 10%, color-mix(in srgb, var(--teal) 15%, transparent), transparent 24%),
+        linear-gradient(180deg, var(--warm) 0%, var(--paper) 330px, var(--paper) 100%);
+      transition: background 0.35s ease, color 0.35s ease;
+    }
+
+    body[data-theme="dark"] {
+      background:
+        radial-gradient(circle at 12% 0%, rgba(67, 216, 255, 0.24), transparent 30%),
+        radial-gradient(circle at 88% 12%, rgba(176, 116, 255, 0.24), transparent 28%),
+        radial-gradient(circle at 45% 38%, rgba(77, 255, 157, 0.08), transparent 30%),
+        linear-gradient(180deg, #050712 0%, #081126 48%, #040711 100%);
+    }
+
+    .page {
+      width: min(1860px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 30px 0 46px;
+    }
+
+    header {
+      position: relative;
+      text-align: center;
+      margin: 0 auto 20px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(34px, 4vw, 58px);
+      line-height: 1.05;
+      letter-spacing: 0;
+      font-weight: 900;
+      text-shadow: 0 16px 42px color-mix(in srgb, var(--blue) 14%, transparent);
+    }
+
+    .subtitle {
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+
+    .theme-switch {
+      width: max-content;
+      display: inline-grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px;
+      margin-top: 18px;
+      padding: 5px;
+      border: 1px solid var(--glass-line);
+      border-radius: 999px;
+      background: var(--panel);
+      box-shadow: var(--soft-shadow), inset 0 1px 0 var(--glass-highlight);
+      backdrop-filter: blur(var(--blur));
+      -webkit-backdrop-filter: blur(var(--blur));
+    }
+
+    .theme-btn {
+      min-width: 88px;
+      border: 0;
+      border-radius: 999px;
+      padding: 8px 14px;
+      color: var(--muted);
+      background: transparent;
+      font: inherit;
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+      transition: color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .theme-btn.is-active {
+      color: var(--ink);
+      background: var(--panel-strong);
+      box-shadow: inset 0 1px 0 var(--glass-highlight), 0 8px 20px var(--arrow-glow);
+    }
+
+    .frame {
+      display: block;
+    }
+
+    .stage-layout {
+      display: grid;
+      gap: 12px;
+    }
+
+    .stage-row {
+      display: grid;
+      grid-template-columns: 148px minmax(1040px, 1fr) 270px;
+      gap: 14px;
+      align-items: stretch;
+    }
+
+    .process-grid,
+    .objects {
+      display: contents;
+    }
+
+    .stage-rail {
+      display: contents;
+    }
+
+    .stage-card {
+      grid-column: 1;
+      min-height: 82px;
+      position: relative;
+      display: grid;
+      grid-template-columns: 34px 1fr;
+      gap: 8px;
+      align-items: center;
+      padding: 12px 10px;
+      border: 1px solid color-mix(in srgb, var(--stage) 52%, var(--glass-border));
+      border-radius: 16px;
+      background: var(--stage-fill);
+      box-shadow: var(--soft-shadow), inset 0 1px 0 var(--glass-highlight);
+      backdrop-filter: blur(var(--blur));
+      -webkit-backdrop-filter: blur(var(--blur));
+      align-self: stretch;
+      transition: border-color 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    .stage-card:not(:last-child)::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      bottom: -12px;
+      width: 3px;
+      height: 12px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, var(--stage), var(--arrow));
+      box-shadow: 0 0 14px color-mix(in srgb, var(--stage) 62%, transparent);
+      transform: translateX(-50%);
+    }
+
+    .stage-card:not(:last-child)::before {
+      content: "";
+      position: absolute;
+      left: calc(50% - 5px);
+      bottom: -15px;
+      border-left: 6px solid transparent;
+      border-right: 6px solid transparent;
+      border-top: 8px solid var(--arrow);
+      filter: drop-shadow(0 0 7px var(--arrow-glow));
+      z-index: 2;
+    }
+
+    .stage-no {
+      width: 31px;
+      height: 31px;
+      display: grid;
+      place-items: center;
+      color: white;
+      border-radius: 10px;
+      background: linear-gradient(145deg, color-mix(in srgb, var(--stage) 88%, #fff), var(--stage));
+      font-size: 16px;
+      font-weight: 900;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.36), 0 0 18px color-mix(in srgb, var(--stage) 34%, transparent);
+    }
+
+    .stage-card strong {
+      display: block;
+      font-size: 15px;
+      line-height: 1.25;
+    }
+
+    .stage-card small {
+      display: block;
+      margin-top: 4px;
+      color: var(--stage);
+      font-size: 12px;
+      font-weight: 900;
+      line-height: 1.2;
+    }
+
+    body[data-theme="dark"] .stage-card,
+    body[data-theme="dark"] .flow-row,
+    body[data-theme="dark"] .object-card,
+    body[data-theme="dark"] .bottom-loop {
+      box-shadow:
+        0 0 0 1px color-mix(in srgb, var(--arrow) 10%, transparent),
+        0 0 24px color-mix(in srgb, var(--row, var(--stage, var(--blue))) 16%, transparent),
+        inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    }
+
+    body[data-theme="dark"] .cell {
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.11),
+        0 0 20px color-mix(in srgb, var(--tone) 13%, transparent);
+    }
+
+    body[data-theme="dark"] h1 {
+      text-shadow: 0 0 26px rgba(67, 216, 255, 0.34), 0 0 44px rgba(176, 116, 255, 0.18);
+    }
+
+    .flow-row {
+      grid-column: 2;
+      min-height: 116px;
+      display: grid;
+      grid-template-columns: 1.42fr 0.56fr 0.72fr 0.56fr;
+      gap: 9px;
+      padding: 9px;
+      border: 1px solid color-mix(in srgb, var(--row) 34%, var(--glass-line));
+      border-radius: 18px;
+      background: var(--cell-bg);
+      box-shadow: var(--soft-shadow), inset 0 1px 0 var(--glass-highlight);
+      backdrop-filter: blur(var(--blur));
+      -webkit-backdrop-filter: blur(var(--blur));
+      align-self: stretch;
+    }
+
+    .cell {
+      min-width: 0;
+      position: relative;
+      border: 1px solid color-mix(in srgb, var(--tone) 36%, var(--glass-line));
+      border-radius: 13px;
+      background: var(--cell-inner);
+      box-shadow: inset 0 1px 0 var(--glass-highlight);
+      overflow: hidden;
+    }
+
+    .cell::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: linear-gradient(135deg, color-mix(in srgb, var(--tone) 10%, transparent), transparent 42%);
+      opacity: 0.88;
+    }
+
+    .cell h3 {
+      position: relative;
+      margin: 0;
+      padding: 6px 9px;
+      color: color-mix(in srgb, var(--tone) 82%, var(--ink));
+      background: linear-gradient(180deg, color-mix(in srgb, var(--tone) 16%, var(--header-fill)), var(--header-fill));
+      font-size: 13px;
+      text-align: center;
+      letter-spacing: 0.04em;
+      border-bottom: 1px solid color-mix(in srgb, var(--tone) 24%, var(--glass-line));
+      text-shadow: 0 0 14px color-mix(in srgb, var(--tone) 30%, transparent);
+    }
+
+    .cell-body {
+      position: relative;
+      padding: 8px 10px 9px;
+      font-size: 12px;
+      line-height: 1.56;
+    }
+
+    .cell-body ul {
+      margin: 0;
+      padding-left: 16px;
+    }
+
+    .cell-body li {
+      margin: 2px 0;
+    }
+
+    .lead {
+      margin: 0 0 7px;
+      font-weight: 850;
+      color: color-mix(in srgb, var(--row) 78%, var(--ink));
+    }
+
+    .pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-top: 7px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 22px;
+      padding: 3px 7px;
+      border: 1px solid color-mix(in srgb, var(--row) 38%, var(--glass-line));
+      border-radius: 999px;
+      color: color-mix(in srgb, var(--row) 76%, var(--ink));
+      background: var(--chip-bg);
+      box-shadow: inset 0 1px 0 var(--glass-highlight);
+      font-size: 11px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .mini-strip {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 5px;
+      margin-top: 7px;
+    }
+
+    .mini {
+      min-height: 34px;
+      display: grid;
+      place-items: center;
+      padding: 4px;
+      border: 1px solid color-mix(in srgb, var(--blue) 36%, var(--glass-line));
+      border-radius: 10px;
+      background: var(--chip-bg);
+      color: color-mix(in srgb, var(--blue) 78%, var(--ink));
+      box-shadow: inset 0 1px 0 var(--glass-highlight);
+      font-size: 11px;
+      font-weight: 850;
+      text-align: center;
+    }
+
+    .decision-wrap {
+      display: grid;
+      place-items: center;
+      margin: 2px 0;
+    }
+
+    .decision-svg {
+      width: min(100%, 210px);
+      height: auto;
+      overflow: visible;
+    }
+
+    .decision-diamond {
+      fill: var(--decision-fill);
+      stroke: var(--arrow);
+      stroke-width: 2;
+      filter: drop-shadow(0 0 8px var(--arrow-glow));
+    }
+
+    .decision-arrow {
+      fill: none;
+      stroke: var(--arrow);
+      stroke-width: 1.7;
+      filter: drop-shadow(0 0 5px var(--arrow-glow));
+    }
+
+    .decision-text {
+      fill: var(--ink);
+      font-size: 12px;
+      font-weight: 900;
+      text-anchor: middle;
+    }
+
+    .decision-label {
+      fill: var(--ink);
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .decision-marker {
+      fill: var(--arrow);
+    }
+
+    .route-note {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: 8px;
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .route-note::before,
+    .route-note::after {
+      content: "";
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--arrow), transparent);
+      opacity: 0.58;
+    }
+
+    .loop-panel {
+      margin-top: 7px;
+      padding: 6px 8px;
+      border: 1px dashed color-mix(in srgb, var(--row) 50%, var(--glass-line));
+      border-radius: 11px;
+      color: color-mix(in srgb, var(--row) 76%, var(--ink));
+      background: var(--chip-bg);
+      box-shadow: inset 0 1px 0 var(--glass-highlight);
+      font-size: 11px;
+      font-weight: 850;
+    }
+
+    .state-flow {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 5px;
+      margin-top: 8px;
+    }
+
+    .state {
+      padding: 3px 7px;
+      border: 1px solid color-mix(in srgb, var(--row) 34%, var(--glass-line));
+      border-radius: 999px;
+      background: var(--chip-bg);
+      color: var(--ink);
+      font-size: 10px;
+      font-weight: 850;
+    }
+
+    .arrow-word {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .bottom-loop {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: repeat(8, minmax(76px, 1fr));
+      gap: 20px;
+      align-items: center;
+      margin-top: 6px;
+      padding: 10px 18px;
+      border: 1px solid color-mix(in srgb, var(--teal) 42%, var(--glass-line));
+      border-radius: 18px;
+      background: var(--cell-bg);
+      box-shadow: var(--soft-shadow), inset 0 1px 0 var(--glass-highlight);
+      backdrop-filter: blur(var(--blur));
+      -webkit-backdrop-filter: blur(var(--blur));
+    }
+
+    .loop-step {
+      min-height: 42px;
+      display: grid;
+      place-items: center;
+      position: relative;
+      padding: 6px 8px;
+      border: 1px solid color-mix(in srgb, var(--teal) 40%, var(--glass-line));
+      border-radius: 10px;
+      background: var(--cell-inner);
+      color: var(--ink);
+      box-shadow: inset 0 1px 0 var(--glass-highlight);
+      font-size: 11px;
+      font-weight: 900;
+      text-align: center;
+    }
+
+    .loop-step:not(:last-child)::after {
+      content: "";
+      position: absolute;
+      right: -18px;
+      top: 50%;
+      width: 14px;
+      height: 2px;
+      border-radius: 999px;
+      background: var(--arrow);
+      box-shadow: 0 0 10px var(--arrow-glow);
+      transform: translateY(-50%);
+      z-index: 2;
+    }
+
+    .loop-step:not(:last-child)::before {
+      content: "";
+      position: absolute;
+      right: -22px;
+      top: calc(50% - 4px);
+      border-left: 7px solid var(--arrow);
+      border-top: 5px solid transparent;
+      border-bottom: 5px solid transparent;
+      filter: drop-shadow(0 0 6px var(--arrow-glow));
+      z-index: 3;
+    }
+
+    .object-title {
+      display: none;
+      padding: 13px 14px;
+      border: 1px solid color-mix(in srgb, var(--blue) 45%, var(--glass-border));
+      border-radius: 18px;
+      color: var(--ink);
+      background: var(--cell-bg);
+      text-align: center;
+      font-size: 22px;
+      font-weight: 900;
+      box-shadow: var(--shadow), inset 0 1px 0 var(--glass-highlight);
+      backdrop-filter: blur(var(--blur));
+      -webkit-backdrop-filter: blur(var(--blur));
+    }
+
+    .object-slot {
+      grid-column: 3;
+      display: grid;
+      gap: 8px;
+      align-content: start;
+      align-self: stretch;
+    }
+
+    .stage-row > .stage-card,
+    .stage-row > .flow-row,
+    .stage-row > .object-slot {
+      grid-row: 1 !important;
+    }
+
+    .stage-card:nth-child(1),
+    .flow-row:nth-of-type(1),
+    .object-slot:nth-child(2) { grid-row: 1; }
+    .stage-card:nth-child(2),
+    .flow-row:nth-of-type(2),
+    .object-slot:nth-child(3) { grid-row: 2; }
+    .stage-card:nth-child(3),
+    .flow-row:nth-of-type(3),
+    .object-slot:nth-child(4) { grid-row: 3; }
+    .stage-card:nth-child(4),
+    .flow-row:nth-of-type(4),
+    .object-slot:nth-child(5) { grid-row: 4; }
+    .stage-card:nth-child(5),
+    .flow-row:nth-of-type(5),
+    .object-slot:nth-child(6) { grid-row: 5; }
+    .stage-card:nth-child(6),
+    .flow-row:nth-of-type(6),
+    .object-slot:nth-child(7) { grid-row: 6; }
+    .stage-card:nth-child(7),
+    .flow-row:nth-of-type(7),
+    .object-slot:nth-child(8) { grid-row: 7; }
+    .stage-card:nth-child(8),
+    .flow-row:nth-of-type(8),
+    .object-slot:nth-child(9) { grid-row: 8; }
+    .stage-card:nth-child(9),
+    .flow-row:nth-of-type(9),
+    .object-slot:nth-child(10) { grid-row: 9; }
+    .stage-card:nth-child(10),
+    .flow-row:nth-of-type(10),
+    .object-slot:nth-child(11) { grid-row: 10; }
+    .stage-card:nth-child(11),
+    .flow-row:nth-of-type(11),
+    .object-slot:nth-child(12) { grid-row: 11; }
+    .stage-card:nth-child(12),
+    .flow-row:nth-of-type(12),
+    .object-slot:nth-child(13) { grid-row: 12; }
+    .stage-card:nth-child(13),
+    .flow-row:nth-of-type(13),
+    .object-slot:nth-child(14) { grid-row: 13; }
+    .stage-card:nth-child(14),
+    .flow-row:nth-of-type(14),
+    .object-slot:nth-child(15) { grid-row: 14; }
+
+    .object-card {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: 36px 1fr;
+      gap: 8px;
+      align-items: center;
+      padding: 9px;
+      border: 1px solid color-mix(in srgb, var(--obj) 40%, var(--glass-line));
+      border-radius: 16px;
+      background: var(--cell-inner);
+      box-shadow: var(--soft-shadow), inset 0 1px 0 var(--glass-highlight);
+      backdrop-filter: blur(var(--blur));
+      -webkit-backdrop-filter: blur(var(--blur));
+    }
+
+    .object-icon {
+      width: 32px;
+      height: 32px;
+      display: grid;
+      place-items: center;
+      border: 1px solid color-mix(in srgb, var(--obj) 38%, var(--glass-line));
+      border-radius: 12px;
+      color: var(--obj);
+      background: color-mix(in srgb, var(--obj) 12%, var(--panel));
+      font-size: 19px;
+      box-shadow: inset 0 1px 0 var(--glass-highlight), 0 0 16px color-mix(in srgb, var(--obj) 26%, transparent);
+    }
+
+    .object-card strong {
+      display: block;
+      color: var(--obj);
+      font-size: 14px;
+      line-height: 1.2;
+    }
+
+    .object-stage {
+      display: inline-flex;
+      width: max-content;
+      margin-bottom: 4px;
+      padding: 2px 7px;
+      border: 1px solid color-mix(in srgb, var(--obj) 34%, var(--glass-line));
+      border-radius: 999px;
+      color: color-mix(in srgb, var(--obj) 80%, var(--ink));
+      background: var(--chip-bg);
+      font-size: 10px;
+      font-weight: 900;
+      line-height: 1.2;
+    }
+
+    .object-card span {
+      display: block;
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+      font-weight: 700;
+    }
+
+    .object-empty {
+      min-height: 64px;
+      display: grid;
+      align-content: center;
+      padding: 9px 10px;
+      border: 1px dashed color-mix(in srgb, var(--muted) 40%, var(--glass-line));
+      border-radius: 14px;
+      color: var(--muted);
+      background: var(--chip-bg);
+      box-shadow: inset 0 1px 0 var(--glass-highlight);
+      font-size: 12px;
+      font-weight: 850;
+      line-height: 1.35;
+      text-align: center;
+    }
+
+    .next-cycle {
+      min-height: 64px;
+      display: grid;
+      place-items: center;
+      padding: 11px 13px;
+      border: 1px dashed var(--arrow);
+      border-radius: 16px;
+      color: var(--ink);
+      background: var(--cell-inner);
+      box-shadow: inset 0 1px 0 var(--glass-highlight), 0 0 18px var(--arrow-glow);
+      font-weight: 900;
+      text-align: center;
+    }
+
+    @media (max-width: 900px) {
+      .frame {
+        display: block;
+      }
+
+      .stage-row {
+        grid-template-columns: 1fr;
+      }
+
+      .stage-card,
+      .flow-row,
+      .object-slot,
+      .bottom-loop {
+        grid-column: 1;
+        grid-row: auto !important;
+      }
+
+      .stage-card::before,
+      .stage-card::after {
+        display: none;
+      }
+
+      .stage-card {
+        min-height: 82px;
+      }
+
+      .flow-row {
+        grid-template-columns: 1fr;
+      }
+
+      .bottom-loop {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .loop-step::before,
+      .loop-step::after {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body data-theme="light">
+  <main class="page">
+    <header>
+      <h1>口语学习模块 | 完整业务流程架构图</h1>
+      <p class="subtitle">任务驱动 × 场景承载 × 学习对象 × 记忆算法 × 学习反馈 × 评测分析</p>
+      <div class="theme-switch" aria-label="主题切换">
+        <button class="theme-btn is-active" type="button" data-theme-button="light">Light Glass</button>
+        <button class="theme-btn" type="button" data-theme-button="dark">Dark Neon</button>
+      </div>
+    </header>
+
+    <section class="frame" aria-label="口语学习模块完整流程">
+      <aside class="stage-rail" aria-label="主流程阶段">
+        <div class="stage-card" style="--stage: var(--blue);"><div class="stage-no">1</div><div><strong>进入模块</strong><small>初始化判断</small></div></div>
+        <div class="stage-card" style="--stage: var(--blue);"><div class="stage-no">2</div><div><strong>目标设定</strong><small>任务驱动</small></div></div>
+        <div class="stage-card" style="--stage: var(--blue);"><div class="stage-no">3</div><div><strong>场景与素材</strong><small>场景承载</small></div></div>
+        <div class="stage-card" style="--stage: var(--blue);"><div class="stage-no">4</div><div><strong>对象生成</strong><small>SpeakingItem</small></div></div>
+        <div class="stage-card" style="--stage: var(--blue);"><div class="stage-no">5</div><div><strong>计划生成</strong><small>任务编排</small></div></div>
+        <div class="stage-card" style="--stage: var(--blue);"><div class="stage-no">6</div><div><strong>今日任务</strong><small>学习控制台</small></div></div>
+        <div class="stage-card" style="--stage: var(--blue);"><div class="stage-no">7</div><div><strong>输入准备</strong><small>素材预习</small></div></div>
+        <div class="stage-card" style="--stage: var(--blue);"><div class="stage-no">8</div><div><strong>跟读模仿</strong><small>发音校准</small></div></div>
+        <div class="stage-card" style="--stage: var(--blue);"><div class="stage-no">9</div><div><strong>自由表达</strong><small>角色对话</small></div></div>
+        <div class="stage-card" style="--stage: var(--orange);"><div class="stage-no">10</div><div><strong>即时反馈</strong><small>维度评分</small></div></div>
+        <div class="stage-card" style="--stage: var(--red);"><div class="stage-no">11</div><div><strong>薄弱强化</strong><small>错因回流</small></div></div>
+        <div class="stage-card" style="--stage: var(--green);"><div class="stage-no">12</div><div><strong>间隔复练</strong><small>记忆算法</small></div></div>
+        <div class="stage-card" style="--stage: var(--purple);"><div class="stage-no">13</div><div><strong>阶段测评</strong><small>能力分析</small></div></div>
+        <div class="stage-card" style="--stage: var(--teal);"><div class="stage-no">14</div><div><strong>报告与调整</strong><small>下一轮任务</small></div></div>
+      </aside>
+
+      <section class="process-grid" aria-label="流程泳道">
+        <article class="flow-row" style="--row: var(--blue);">
+          <div class="cell" style="--tone: var(--blue);">
+            <h3>流程内容</h3>
+            <div class="cell-body">
+              <p class="lead">主程序入口进入口语模块</p>
+              <ul>
+                <li>入口：首页、学习中心、课程学习、AI 推荐或今日任务。</li>
+                <li>系统先判断是否已有 `SpeakingProfile`、当前 `SpeakingPlan` 和今日任务。</li>
+              </ul>
+              <div class="decision-wrap">
+                <svg class="decision-svg" viewBox="0 0 310 120" role="img" aria-label="是否已初始化口语计划">
+                  <defs>
+                    <marker id="arrow-init" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon class="decision-marker" points="0 0,8 3,0 6" /></marker>
+                  </defs>
+                  <polygon class="decision-diamond" points="130,10 246,58 130,106 14,58" />
+                  <text class="decision-text" x="130" y="52">是否已初始化</text>
+                  <text class="decision-text" x="130" y="69">口语计划?</text>
+                  <line class="decision-arrow" x1="246" y1="58" x2="296" y2="58" marker-end="url(#arrow-init)" />
+                  <text class="decision-label" x="265" y="48">是</text>
+                  <line class="decision-arrow" x1="130" y1="106" x2="130" y2="118" marker-end="url(#arrow-init)" />
+                  <text class="decision-label" x="107" y="116">否</text>
+                </svg>
+              </div>
+              <div class="route-note">是：今日任务页 / 否：目标设定</div>
+            </div>
+          </div>
+          <div class="cell" style="--tone: var(--blue);"><h3>用户动作</h3><div class="cell-body"><ul><li>点击口语学习入口。</li><li>等待模块加载。</li><li>首次使用时开始初始化。</li><li>非首次使用时查看今日口语任务。</li></ul></div></div>
+          <div class="cell" style="--tone: var(--blue);"><h3>系统动作</h3><div class="cell-body"><ul><li>判断登录状态。</li><li>检查 `SpeakingProfile`。</li><li>检查当前 `SpeakingPlan`。</li><li>检查今日口语任务。</li><li>决定跳转目标。</li></ul></div></div>
+          <div class="cell" style="--tone: var(--green);"><h3>数据沉淀</h3><div class="cell-body"><ul><li>口语模块状态。</li><li>初始化状态。</li><li>当前计划 ID。</li><li>当前场景 ID。</li><li>今日任务状态。</li></ul></div></div>
+        </article>
+
+        <article class="flow-row" style="--row: var(--blue);">
+          <div class="cell" style="--tone: var(--blue);"><h3>流程内容</h3><div class="cell-body"><p class="lead">目标、水平、强度、练习偏好</p><ul><li>目标：日常口语、考试口语、商务英语、面试沟通、课堂展示、旅行交流、演讲表达、自定义。</li><li>偏好：发音、流利度、词汇表达、语法准确、内容组织、互动问答、考试评分。</li></ul><div class="pill-row"><span class="pill">口语目标</span><span class="pill">当前水平</span><span class="pill">每日强度</span><span class="pill">练习偏好</span></div></div></div>
+          <div class="cell" style="--tone: var(--blue);"><h3>用户动作</h3><div class="cell-body"><ul><li>选择学习目标。</li><li>选择当前水平。</li><li>设置每日练习强度。</li><li>选择练习偏好。</li></ul></div></div>
+          <div class="cell" style="--tone: var(--blue);"><h3>系统动作</h3><div class="cell-body"><ul><li>推荐口语场景。</li><li>设置初始难度。</li><li>计算每日任务量。</li><li>调整练习类型比例。</li><li>生成计划草案。</li></ul></div></div>
+          <div class="cell" style="--tone: var(--green);"><h3>数据沉淀</h3><div class="cell-body"><ul><li>口语目标。</li><li>当前水平。</li><li>每日强度。</li><li>练习偏好。</li><li>初始计划草案。</li></ul></div></div>
+        </article>
+
+        <article class="flow-row" style="--row: var(--blue);">
+          <div class="cell" style="--tone: var(--blue);"><h3>流程内容</h3><div class="cell-body"><p class="lead">口语练习绑定真实表达场景</p><ul><li>场景：日常对话、考试口语、商务会议、课堂展示、旅行交流、面试沟通、新闻讨论、课程复述。</li><li>素材：官方题库、考试话题库、课程材料、文章/视频、用户笔记、AI 情景对话、自定义题目。</li></ul><div class="mini-strip"><div class="mini">日常对话</div><div class="mini">考试口语</div><div class="mini">商务会议</div><div class="mini">课程复述</div></div></div></div>
+          <div class="cell" style="--tone: var(--blue);"><h3>用户动作</h3><div class="cell-body"><ul><li>选择口语场景。</li><li>选择素材来源。</li><li>确认系统推荐。</li><li>上传或选择素材。</li></ul></div></div>
+          <div class="cell" style="--tone: var(--blue);"><h3>系统动作</h3><div class="cell-body"><ul><li>匹配推荐场景。</li><li>推荐素材来源。</li><li>提取可复述素材。</li><li>生成对话、问答和模板。</li><li>绑定标签和来源。</li></ul></div></div>
+          <div class="cell" style="--tone: var(--green);"><h3>数据沉淀</h3><div class="cell-body"><ul><li>场景选择。</li><li>素材来源。</li><li>场景标签。</li><li>素材引用。</li><li>AI 生成记录。</li></ul></div></div>
+        </article>
+
+        <article class="flow-row" style="--row: var(--blue);">
+          <div class="cell" style="--tone: var(--blue);"><h3>流程内容</h3><div class="cell-body"><p class="lead">生成可练、可反馈、可复练的口语对象</p><ul><li>对象类型：单句表达、常用短语、情景问答、对话片段、话题卡、表达模板、复述材料、跟读音频、用户错句。</li><li>每个对象绑定难度、场景、目标能力、练习方式和评分维度。</li></ul><div class="pill-row"><span class="pill">SpeakingItem</span><span class="pill">参考表达</span><span class="pill">关键词</span><span class="pill">评分维度</span></div></div></div>
+          <div class="cell" style="--tone: var(--blue);"><h3>用户动作</h3><div class="cell-body"><ul><li>查看推荐对象。</li><li>确认话题和表达。</li><li>调整练习范围。</li><li>确认进入计划生成。</li></ul></div></div>
+          <div class="cell" style="--tone: var(--blue);"><h3>系统动作</h3><div class="cell-body"><ul><li>拆解素材为 `SpeakingItem`。</li><li>标注难度与能力维度。</li><li>生成示例回答。</li><li>生成参考表达。</li><li>初始化用户状态。</li></ul></div></div>
+          <div class="cell" style="--tone: var(--green);"><h3>数据沉淀</h3><div class="cell-body"><ul><li>`SpeakingItem`。</li><li>学习对象来源。</li><li>初始状态。</li><li>能力维度标签。</li></ul></div></div>
+        </article>
+
+        <article class="flow-row" style="--row: var(--blue);">
+          <div class="cell" style="--tone: var(--blue);"><h3>流程内容</h3><div class="cell-body"><p class="lead">学习计划生成是独立步骤</p><ul><li>输入：目标、水平、强度、偏好、场景、素材、对象数量和难度。</li><li>输出：输入准备量、跟读任务量、自由表达任务量、复练上限、测评周期、预计完成时间、评分权重。</li></ul><div class="loop-panel">不可跳过：计划生成完成后，才允许进入今日口语任务。</div></div></div>
+          <div class="cell" style="--tone: var(--blue);"><h3>用户动作</h3><div class="cell-body"><ul><li>查看计划预览。</li><li>确认每日任务量。</li><li>确认练习比例。</li><li>确认生成今日任务。</li></ul></div></div>
+          <div class="cell" style="--tone: var(--blue);"><h3>系统动作</h3><div class="cell-body"><ul><li>创建 `SpeakingPlan`。</li><li>计算阶段节奏。</li><li>初始化对象状态。</li><li>设置评分维度权重。</li><li>生成首轮任务规则。</li></ul></div></div>
+          <div class="cell" style="--tone: var(--green);"><h3>数据沉淀</h3><div class="cell-body"><ul><li>`SpeakingPlan`。</li><li>计划版本。</li><li>生成原因。</li><li>测评周期。</li><li>预计完成日期。</li></ul></div></div>
+        </article>
+
+        <article class="flow-row" style="--row: var(--blue);">
+          <div class="cell" style="--tone: var(--blue);"><h3>流程内容</h3><div class="cell-body"><p class="lead">今日口语任务是练习控制台</p><ul><li>任务包括输入准备、跟读模仿、自由表达、场景角色对话、薄弱项复练、阶段测评。</li><li>任务由计划、薄弱项记录、到期复练和阶段测评规则共同生成。</li></ul><div class="mini-strip"><div class="mini">开始练习</div><div class="mini">薄弱复练</div><div class="mini">阶段测评</div><div class="mini">查看报告</div></div></div></div>
+          <div class="cell" style="--tone: var(--blue);"><h3>用户动作</h3><div class="cell-body"><ul><li>查看今日任务。</li><li>选择快速操作。</li><li>进入练习、复练、测评、报告或设置。</li></ul></div></div>
+          <div class="cell" style="--tone: var(--blue);"><h3>系统动作</h3><div class="cell-body"><ul><li>按计划生成新任务。</li><li>按薄弱项生成强化任务。</li><li>按复练时间生成到期任务。</li><li>判断是否安排测评。</li><li>生成今日建议。</li></ul></div></div>
+          <div class="cell" style="--tone: var(--green);"><h3>数据沉淀</h3><div class="cell-body"><ul><li>`DailySpeakingTask`。</li><li>任务状态。</li><li>任务生成原因。</li><li>任务完成度。</li><li>建议记录。</li></ul></div></div>
+        </article>
+
+        <article class="flow-row" style="--row: var(--blue);">
+          <div class="cell" style="--tone: var(--blue);"><h3>流程内容</h3><div class="cell-body"><p class="lead">先有输入，再做输出</p><ul><li>用户阅读场景说明、听参考音频、查看关键词、句型、表达模板和示例回答。</li><li>系统标注重点表达和发音提示，并加入后续练习队列。</li></ul><div class="pill-row"><span class="pill">场景说明</span><span class="pill">参考音频</span><span class="pill">关键词</span><span class="pill">表达模板</span></div></div></div>
+          <div class="cell" style="--tone: var(--blue);"><h3>用户动作</h3><div class="cell-body"><ul><li>阅读场景说明。</li><li>听参考音频。</li><li>查看关键词和句型。</li><li>理解示例回答和语境。</li></ul></div></div>
+          <div class="cell" style="--tone: var(--blue);"><h3>系统动作</h3><div class="cell-body"><ul><li>展示输入材料。</li><li>标注重点表达。</li><li>给出发音提示。</li><li>加入后续练习队列。</li></ul></div></div>
+          <div class="cell" style="--tone: var(--green);"><h3>数据沉淀</h3><div class="cell-body"><ul><li>输入查看记录。</li><li>重点表达曝光。</li><li>准备时长。</li><li>练习队列。</li></ul></div></div>
+        </article>
+
+        <article class="flow-row" style="--row: var(--blue);">
+          <div class="cell" style="--tone: var(--blue);"><h3>流程内容</h3><div class="cell-body"><p class="lead">用标准音频校准发音、重音、语调和节奏</p><ul><li>用户听标准音频、跟读录音、重复练习并查看发音反馈。</li><li>系统采集录音、对齐参考音频，标注薄弱音素或表达片段。</li></ul><div class="mini-strip"><div class="mini">标准音频</div><div class="mini">跟读录音</div><div class="mini">音素对齐</div><div class="mini">重复练习</div></div></div></div>
+          <div class="cell" style="--tone: var(--blue);"><h3>用户动作</h3><div class="cell-body"><ul><li>听标准音频。</li><li>跟读录音。</li><li>重复练习。</li><li>查看发音反馈。</li></ul></div></div>
+          <div class="cell" style="--tone: var(--blue);"><h3>系统动作</h3><div class="cell-body"><ul><li>采集录音。</li><li>对齐参考音频。</li><li>评估发音、重音、语调、节奏。</li><li>标注薄弱片段。</li><li>判断是否重复跟读。</li></ul></div></div>
+          <div class="cell" style="--tone: var(--green);"><h3>数据沉淀</h3><div class="cell-body"><ul><li>录音记录。</li><li>发音评分。</li><li>音素/重音/语调错误。</li><li>重复次数。</li></ul></div></div>
+        </article>
+
+        <article class="flow-row" style="--row: var(--blue);">
+          <div class="cell" style="--tone: var(--blue);"><h3>流程内容</h3><div class="cell-body"><p class="lead">进入真实表达任务</p><ul><li>用户根据话题自由表达、按角色完成对话、回答追问，可选查看提示。</li><li>系统转写语音文本，评估词汇、语法、流利度、内容结构和互动回应。</li></ul><div class="pill-row"><span class="pill">话题表达</span><span class="pill">角色对话</span><span class="pill">追问回答</span><span class="pill">提示使用</span></div></div></div>
+          <div class="cell" style="--tone: var(--blue);"><h3>用户动作</h3><div class="cell-body"><ul><li>根据话题自由表达。</li><li>按角色完成对话。</li><li>回答追问。</li><li>可选查看提示。</li></ul></div></div>
+          <div class="cell" style="--tone: var(--blue);"><h3>系统动作</h3><div class="cell-body"><ul><li>记录表达内容。</li><li>转写语音为文本。</li><li>评估多维能力。</li><li>判断是否完成任务。</li></ul></div></div>
+          <div class="cell" style="--tone: var(--green);"><h3>数据沉淀</h3><div class="cell-body"><ul><li>录音。</li><li>转写文本。</li><li>回答耗时。</li><li>提示使用次数。</li><li>表达完整度。</li></ul></div></div>
+        </article>
+
+        <article class="flow-row" style="--row: var(--orange);">
+          <div class="cell" style="--tone: var(--orange);"><h3>流程内容</h3><div class="cell-body"><p class="lead">反馈必须拆成维度，而不是只给总分</p><ul><li>维度：发音准确度、语调重音、流利度、词汇、语法、内容组织、场景适配、互动回应。</li><li>错因：发音错误、卡顿、词汇不足、语法错误、内容偏题、结构弱、场景表达不合适。</li></ul><div class="decision-wrap">
+                <svg class="decision-svg" viewBox="0 0 310 120" role="img" aria-label="是否存在薄弱项">
+                  <defs>
+                    <marker id="arrow-weak" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon class="decision-marker" points="0 0,8 3,0 6" /></marker>
+                  </defs>
+                  <polygon class="decision-diamond" points="130,10 246,58 130,106 14,58" />
+                  <text class="decision-text" x="130" y="64">存在薄弱项?</text>
+                  <line class="decision-arrow" x1="246" y1="58" x2="296" y2="58" marker-end="url(#arrow-weak)" />
+                  <text class="decision-label" x="265" y="48">否</text>
+                  <line class="decision-arrow" x1="130" y1="106" x2="130" y2="118" marker-end="url(#arrow-weak)" />
+                  <text class="decision-label" x="107" y="116">是</text>
+                </svg>
+              </div><div class="route-note">是：薄弱项强化 / 否：间隔复练</div></div></div>
+          <div class="cell" style="--tone: var(--orange);"><h3>用户动作</h3><div class="cell-body"><ul><li>查看总分和维度分。</li><li>理解错因标签。</li><li>查看更自然表达。</li><li>确认进入复练或下一题。</li></ul></div></div>
+          <div class="cell" style="--tone: var(--orange);"><h3>系统动作</h3><div class="cell-body"><ul><li>生成总分和维度分。</li><li>生成错因标签。</li><li>给出修正表达。</li><li>标注需复练片段。</li><li>决定是否强化。</li></ul></div></div>
+          <div class="cell" style="--tone: var(--green);"><h3>数据沉淀</h3><div class="cell-body"><ul><li>`SpeakingPracticeRecord`。</li><li>评分维度。</li><li>错因标签。</li><li>修正建议。</li><li>薄弱项标记。</li></ul></div></div>
+        </article>
+
+        <article class="flow-row" style="--row: var(--red);">
+          <div class="cell" style="--tone: var(--red);"><h3>流程内容</h3><div class="cell-body"><p class="lead">薄弱项回流为专项强化任务</p><ul><li>发音错误 -> 音素与最小对立练习；重音/语调错误 -> 跟读和节奏训练。</li><li>卡顿过多 -> 关键词复述；词汇不足 -> 替换表达；语法错误 -> 错句重说。</li><li>内容结构弱 -> 模板化回答；场景不适配 -> 场景表达替换。</li></ul><div class="loop-panel">移出规则：连续 2 到 3 次达标，或维度分达到阈值，或阶段测评通过。</div></div></div>
+          <div class="cell" style="--tone: var(--red);"><h3>用户动作</h3><div class="cell-body"><ul><li>查看薄弱项。</li><li>查看错误原因。</li><li>完成专项复练。</li><li>查看复练结果。</li></ul></div></div>
+          <div class="cell" style="--tone: var(--red);"><h3>系统动作</h3><div class="cell-body"><ul><li>合并重复错因。</li><li>生成强化任务。</li><li>记录复练结果。</li><li>判断是否解决。</li><li>回流复练队列。</li></ul></div></div>
+          <div class="cell" style="--tone: var(--green);"><h3>数据沉淀</h3><div class="cell-body"><ul><li>`WeakSpeakingRecord`。</li><li>错因历史。</li><li>强化任务。</li><li>复练结果。</li><li>resolved 状态。</li></ul></div></div>
+        </article>
+
+        <article class="flow-row" style="--row: var(--green);">
+          <div class="cell" style="--tone: var(--green);"><h3>流程内容</h3><div class="cell-body"><p class="lead">按表现安排下一次复练</p><ul><li>优先级：薄弱项 > 即将遗忘表达 > 今日到期复练 > 新学表达 > 已掌握表达抽查。</li><li>系统根据薄弱维度排序，更新 `nextPracticeAt`、`masteryScore` 和维度分。</li></ul><div class="state-flow"><span class="state">new</span><span class="arrow-word">-></span><span class="state">preparing</span><span class="arrow-word">-></span><span class="state">shadowing</span><span class="arrow-word">-></span><span class="state">speaking</span><span class="arrow-word">-></span><span class="state">reviewing</span><span class="arrow-word">-></span><span class="state">mastered</span></div><div class="loop-panel">薄弱回流：shadowing / speaking / reviewing -> weak -> reinforced -> reviewing -> mastered。</div></div></div>
+          <div class="cell" style="--tone: var(--green);"><h3>用户动作</h3><div class="cell-body"><ul><li>进入到期复练。</li><li>完成复练任务。</li><li>查看复练反馈。</li><li>查看掌握变化。</li></ul></div></div>
+          <div class="cell" style="--tone: var(--green);"><h3>系统动作</h3><div class="cell-body"><ul><li>查询到期复练对象。</li><li>按薄弱维度排序。</li><li>生成复练任务。</li><li>更新下次练习时间。</li><li>判断是否 mastered。</li></ul></div></div>
+          <div class="cell" style="--tone: var(--green);"><h3>数据沉淀</h3><div class="cell-body"><ul><li>复练计划。</li><li>`lastPracticedAt`。</li><li>`nextPracticeAt`。</li><li>间隔天数。</li><li>掌握度变化。</li></ul></div></div>
+        </article>
+
+        <article class="flow-row" style="--row: var(--purple);">
+          <div class="cell" style="--tone: var(--purple);"><h3>流程内容</h3><div class="cell-body"><p class="lead">阶段性验证真实口语能力</p><ul><li>触发：每 7 天、完成一个场景单元、完成一定数量口语对象、考试冲刺、用户手动发起。</li><li>内容：跟读测评、话题表达、角色对话、追问回答、复述任务、综合表达。</li></ul><div class="pill-row"><span class="pill">总分</span><span class="pill">维度分</span><span class="pill">薄弱场景</span><span class="pill">薄弱表达</span><span class="pill">下一阶段建议</span></div></div></div>
+          <div class="cell" style="--tone: var(--purple);"><h3>用户动作</h3><div class="cell-body"><ul><li>开始阶段测评。</li><li>完成混合任务。</li><li>查看测评结果。</li><li>查看下一阶段建议。</li></ul></div></div>
+          <div class="cell" style="--tone: var(--purple);"><h3>系统动作</h3><div class="cell-body"><ul><li>抽取已练、薄弱和到期对象。</li><li>生成混合测评。</li><li>计算总分和维度分。</li><li>识别薄弱项。</li><li>生成建议。</li></ul></div></div>
+          <div class="cell" style="--tone: var(--green);"><h3>数据沉淀</h3><div class="cell-body"><ul><li>测评结果。</li><li>评分维度。</li><li>薄弱项。</li><li>阶段能力变化。</li></ul></div></div>
+        </article>
+
+        <article class="flow-row" style="--row: var(--teal);">
+          <div class="cell" style="--tone: var(--teal);"><h3>流程内容</h3><div class="cell-body"><p class="lead">报告反向调整下一轮口语任务</p><ul><li>报告：今日报告、周报告、总体报告。</li><li>计划调整：任务量、持续薄弱维度、跟读/自由表达/角色对话/复练比例、测评周期。</li></ul><div class="loop-panel">报告不是终点，报告是下一轮口语任务生成的输入。</div></div></div>
+          <div class="cell" style="--tone: var(--teal);"><h3>用户动作</h3><div class="cell-body"><ul><li>查看报告。</li><li>查看 AI 建议。</li><li>接受默认调整。</li><li>或手动修改强度和偏好。</li></ul></div></div>
+          <div class="cell" style="--tone: var(--teal);"><h3>系统动作</h3><div class="cell-body"><ul><li>统计练习数据。</li><li>计算评分趋势。</li><li>识别薄弱趋势。</li><li>调整练习比例。</li><li>生成下一轮任务。</li></ul></div></div>
+          <div class="cell" style="--tone: var(--green);"><h3>数据沉淀</h3><div class="cell-body"><ul><li>`SpeakingReport`。</li><li>评分趋势。</li><li>薄弱趋势。</li><li>计划版本。</li><li>调整原因。</li><li>下一轮任务。</li></ul></div></div>
+        </article>
+
+        <div class="bottom-loop" aria-label="闭环回流">
+          <div class="loop-step">用户目标 / 偏好</div>
+          <div class="loop-step">场景 / 素材</div>
+          <div class="loop-step">口语学习对象</div>
+          <div class="loop-step">录音 / 转写 / 练习记录</div>
+          <div class="loop-step">错因 / 薄弱项</div>
+          <div class="loop-step">测评结果 / 学习报告</div>
+          <div class="loop-step">计划调整</div>
+          <div class="loop-step">新一轮任务</div>
+        </div>
+      </section>
+
+      <aside class="objects" aria-label="核心对象">
+        <div class="object-title">核心对象</div>
+        <div class="object-slot"><div class="object-card" style="--obj: var(--blue);"><div class="object-icon">●</div><div><small class="object-stage">阶段 1</small><strong>SpeakingProfile</strong><span>初始化状态、用户口语画像和当前计划判断。</span></div></div></div>
+        <div class="object-slot"><div class="object-empty">沿用 SpeakingProfile<br />补齐目标、水平、强度、偏好。</div></div>
+        <div class="object-slot">
+          <div class="object-card" style="--obj: var(--green);"><div class="object-icon">◆</div><div><small class="object-stage">阶段 3</small><strong>SpeakingScenario</strong><span>日常、考试、商务、面试、课堂、旅行等。</span></div></div>
+          <div class="object-card" style="--obj: var(--orange);"><div class="object-icon">▣</div><div><small class="object-stage">阶段 3</small><strong>SpeakingMaterialSource</strong><span>题库、课程、文章、视频、笔记、AI、自定义。</span></div></div>
+        </div>
+        <div class="object-slot"><div class="object-card" style="--obj: var(--purple);"><div class="object-icon">Aa</div><div><small class="object-stage">阶段 4</small><strong>SpeakingItem</strong><span>句子、短语、问答、对话、话题、模板、错句。</span></div></div></div>
+        <div class="object-slot"><div class="object-card" style="--obj: var(--blue);"><div class="object-icon">□</div><div><small class="object-stage">阶段 5</small><strong>SpeakingPlan</strong><span>任务量、复练上限、测评周期和评分权重。</span></div></div></div>
+        <div class="object-slot"><div class="object-card" style="--obj: var(--orange);"><div class="object-icon">▦</div><div><small class="object-stage">阶段 6</small><strong>DailySpeakingTask</strong><span>准备、跟读、自由表达、对话、复练、测评。</span></div></div></div>
+        <div class="object-slot"><div class="object-card" style="--obj: var(--teal);"><div class="object-icon">☰</div><div><small class="object-stage">阶段 7</small><strong>UserSpeakingItemState</strong><span>输入准备状态、素材熟悉度和掌握度。</span></div></div></div>
+        <div class="object-slot"><div class="object-card" style="--obj: var(--blue);"><div class="object-icon">✓</div><div><small class="object-stage">阶段 8</small><strong>SpeakingPracticeRecord</strong><span>跟读录音、转写、发音评分和耗时。</span></div></div></div>
+        <div class="object-slot"><div class="object-card" style="--obj: var(--blue);"><div class="object-icon">✓</div><div><small class="object-stage">阶段 9</small><strong>SpeakingPracticeRecord</strong><span>自由表达、角色对话、内容完整度和流利度。</span></div></div></div>
+        <div class="object-slot"><div class="object-card" style="--obj: var(--blue);"><div class="object-icon">✓</div><div><small class="object-stage">阶段 10</small><strong>SpeakingPracticeRecord</strong><span>维度评分、错因、修正建议和反馈结果。</span></div></div></div>
+        <div class="object-slot"><div class="object-card" style="--obj: var(--red);"><div class="object-icon">!</div><div><small class="object-stage">阶段 11</small><strong>WeakSpeakingRecord</strong><span>薄弱项、错因历史、强化任务和解决状态。</span></div></div></div>
+        <div class="object-slot"><div class="object-card" style="--obj: var(--teal);"><div class="object-icon">☰</div><div><small class="object-stage">阶段 12</small><strong>UserSpeakingItemState</strong><span>复练间隔、维度分、掌握度和状态流转。</span></div></div></div>
+        <div class="object-slot"><div class="object-card" style="--obj: var(--purple);"><div class="object-icon">↗</div><div><small class="object-stage">阶段 13</small><strong>SpeakingAssessmentResult</strong><span>总分、维度分、薄弱场景和阶段变化。</span></div></div></div>
+        <div class="object-slot">
+          <div class="object-card" style="--obj: var(--teal);"><div class="object-icon">▤</div><div><small class="object-stage">阶段 14</small><strong>SpeakingReport</strong><span>时长、任务、录音、趋势、薄弱项和调整建议。</span></div></div>
+          <div class="next-cycle">下一轮口语任务<br />回到今日任务</div>
+        </div>
+      </aside>
+    </section>
+  </main>
+  <script>
+    const themeButtons = Array.from(document.querySelectorAll("[data-theme-button]"));
+
+    const buildStageLayout = () => {
+      const frame = document.querySelector(".frame");
+      const stageRail = document.querySelector(".stage-rail");
+      const processGrid = document.querySelector(".process-grid");
+      const objects = document.querySelector(".objects");
+
+      if (!frame || !stageRail || !processGrid || !objects || frame.querySelector(".stage-layout")) {
+        return;
+      }
+
+      const stages = Array.from(stageRail.querySelectorAll(".stage-card"));
+      const rows = Array.from(processGrid.querySelectorAll(".flow-row"));
+      const slots = Array.from(objects.querySelectorAll(".object-slot"));
+      const bottomLoop = processGrid.querySelector(".bottom-loop");
+      const layout = document.createElement("div");
+      layout.className = "stage-layout";
+
+      rows.forEach((row, index) => {
+        const stageRow = document.createElement("div");
+        stageRow.className = "stage-row";
+        if (stages[index]) stageRow.appendChild(stages[index]);
+        stageRow.appendChild(row);
+        if (slots[index]) stageRow.appendChild(slots[index]);
+        layout.appendChild(stageRow);
+      });
+
+      if (bottomLoop) bottomLoop.remove();
+      frame.prepend(layout);
+      stageRail.remove();
+      processGrid.remove();
+      objects.remove();
+      if (bottomLoop) frame.appendChild(bottomLoop);
+    };
+
+    buildStageLayout();
+
+    const applyTheme = (theme) => {
+      const nextTheme = theme === "dark" ? "dark" : "light";
+      document.body.dataset.theme = nextTheme;
+      themeButtons.forEach((button) => {
+        button.classList.toggle("is-active", button.dataset.themeButton === nextTheme);
+      });
+      localStorage.setItem("speaking-flow-theme", nextTheme);
+    };
+
+    applyTheme(localStorage.getItem("speaking-flow-theme") || "light");
+
+    themeButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        applyTheme(button.dataset.themeButton);
+      });
+    });
+  </script>
+</body>
+</html>

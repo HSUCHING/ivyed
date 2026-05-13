@@ -1,0 +1,1009 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>背单词模块 | 完整流程架构图</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --paper: #eef6ff;
+      --warm: #fffaf4;
+      --panel: rgba(255, 255, 255, 0.68);
+      --panel-strong: rgba(255, 255, 255, 0.84);
+      --ink: #172033;
+      --muted: #61708a;
+      --line: rgba(150, 178, 215, 0.62);
+      --arrow: #174075;
+      --arrow-glow: rgba(24, 90, 168, 0.22);
+      --glass-border: rgba(255, 255, 255, 0.78);
+      --glass-line: rgba(115, 153, 205, 0.34);
+      --glass-highlight: rgba(255, 255, 255, 0.58);
+      --blue: #0f68d8;
+      --blue-2: #eaf4ff;
+      --green: #16a56b;
+      --green-2: #edf9f1;
+      --orange: #f08125;
+      --orange-2: #fff3e4;
+      --red: #e84f61;
+      --red-2: #fff0f0;
+      --purple: #7057df;
+      --purple-2: #f3f0ff;
+      --teal: #0797a8;
+      --teal-2: #eafcff;
+      --radius: 12px;
+      --shadow: 0 18px 52px rgba(62, 108, 181, 0.16);
+      --soft-shadow: 0 12px 32px rgba(57, 101, 167, 0.11);
+      --cell-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.46));
+      --cell-inner: linear-gradient(145deg, rgba(255, 255, 255, 0.86), rgba(255, 255, 255, 0.42));
+      --header-fill: rgba(255, 255, 255, 0.42);
+      --chip-bg: rgba(255, 255, 255, 0.52);
+      --stage-fill: linear-gradient(145deg, rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.44));
+      --decision-fill: rgba(255, 255, 255, 0.78);
+      --blur: 22px;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body[data-theme="dark"] {
+      color-scheme: dark;
+      --paper: #050712;
+      --warm: #0a1024;
+      --panel: rgba(8, 13, 31, 0.72);
+      --panel-strong: rgba(10, 18, 41, 0.9);
+      --ink: #f3fbff;
+      --muted: #9bb7d4;
+      --line: rgba(88, 236, 255, 0.25);
+      --arrow: #66f6ff;
+      --arrow-glow: rgba(102, 246, 255, 0.72);
+      --glass-border: rgba(117, 243, 255, 0.36);
+      --glass-line: rgba(134, 151, 255, 0.3);
+      --glass-highlight: rgba(125, 255, 235, 0.18);
+      --blue: #43d8ff;
+      --green: #4dff9d;
+      --orange: #ffb545;
+      --red: #ff5b8a;
+      --purple: #b074ff;
+      --teal: #42ffe6;
+      --shadow: 0 0 36px rgba(67, 216, 255, 0.18);
+      --soft-shadow: 0 0 26px rgba(77, 255, 157, 0.11);
+      --cell-bg: linear-gradient(145deg, rgba(7, 13, 31, 0.9), rgba(13, 18, 43, 0.68));
+      --cell-inner: linear-gradient(145deg, rgba(12, 20, 46, 0.95), rgba(8, 12, 31, 0.78));
+      --header-fill: rgba(6, 11, 28, 0.68);
+      --chip-bg: rgba(7, 16, 38, 0.82);
+      --stage-fill: linear-gradient(145deg, rgba(14, 23, 54, 0.96), rgba(7, 12, 31, 0.78));
+      --decision-fill: rgba(9, 16, 39, 0.94);
+      --blur: 18px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 18% 0%, color-mix(in srgb, var(--blue) 18%, transparent), transparent 30%),
+        radial-gradient(circle at 86% 10%, color-mix(in srgb, var(--teal) 15%, transparent), transparent 24%),
+        linear-gradient(180deg, var(--warm) 0%, var(--paper) 330px, var(--paper) 100%);
+      transition: background 0.35s ease, color 0.35s ease;
+    }
+
+    body[data-theme="dark"] {
+      background:
+        radial-gradient(circle at 12% 0%, rgba(67, 216, 255, 0.24), transparent 30%),
+        radial-gradient(circle at 88% 12%, rgba(176, 116, 255, 0.24), transparent 28%),
+        radial-gradient(circle at 45% 38%, rgba(77, 255, 157, 0.08), transparent 30%),
+        linear-gradient(180deg, #050712 0%, #081126 48%, #040711 100%);
+    }
+
+    .page {
+      width: min(1860px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 30px 0 46px;
+    }
+
+    header {
+      position: relative;
+      text-align: center;
+      margin: 0 auto 20px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(34px, 4vw, 58px);
+      line-height: 1.05;
+      letter-spacing: 0;
+      font-weight: 900;
+      text-shadow: 0 16px 42px color-mix(in srgb, var(--blue) 14%, transparent);
+    }
+
+    .subtitle {
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+
+    .theme-switch {
+      width: max-content;
+      display: inline-grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px;
+      margin-top: 18px;
+      padding: 5px;
+      border: 1px solid var(--glass-line);
+      border-radius: 999px;
+      background: var(--panel);
+      box-shadow: var(--soft-shadow), inset 0 1px 0 var(--glass-highlight);
+      backdrop-filter: blur(var(--blur));
+      -webkit-backdrop-filter: blur(var(--blur));
+    }
+
+    .theme-btn {
+      min-width: 88px;
+      border: 0;
+      border-radius: 999px;
+      padding: 8px 14px;
+      color: var(--muted);
+      background: transparent;
+      font: inherit;
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+      transition: color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .theme-btn.is-active {
+      color: var(--ink);
+      background: var(--panel-strong);
+      box-shadow: inset 0 1px 0 var(--glass-highlight), 0 8px 20px var(--arrow-glow);
+    }
+
+    .frame {
+      display: block;
+    }
+
+    .stage-layout {
+      display: grid;
+      gap: 12px;
+    }
+
+    .stage-row {
+      display: grid;
+      grid-template-columns: 148px minmax(1040px, 1fr) 270px;
+      gap: 14px;
+      align-items: stretch;
+    }
+
+    .stage-rail {
+      display: contents;
+    }
+
+    .stage-card {
+      grid-column: 1;
+      min-height: 82px;
+      position: relative;
+      display: grid;
+      grid-template-columns: 34px 1fr;
+      gap: 8px;
+      align-items: center;
+      padding: 12px 10px;
+      border: 1px solid color-mix(in srgb, var(--stage) 52%, var(--glass-border));
+      border-radius: 16px;
+      background: var(--stage-fill);
+      box-shadow: var(--soft-shadow), inset 0 1px 0 var(--glass-highlight);
+      backdrop-filter: blur(var(--blur));
+      -webkit-backdrop-filter: blur(var(--blur));
+      align-self: stretch;
+      transition: border-color 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    .stage-card:not(:last-child)::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      bottom: -12px;
+      width: 3px;
+      height: 12px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, var(--stage), var(--arrow));
+      box-shadow: 0 0 14px color-mix(in srgb, var(--stage) 62%, transparent);
+      transform: translateX(-50%);
+    }
+
+    .stage-card:not(:last-child)::before {
+      content: "";
+      position: absolute;
+      left: calc(50% - 5px);
+      bottom: -15px;
+      border-left: 6px solid transparent;
+      border-right: 6px solid transparent;
+      border-top: 8px solid var(--arrow);
+      filter: drop-shadow(0 0 7px var(--arrow-glow));
+      z-index: 2;
+    }
+
+    .stage-no {
+      width: 31px;
+      height: 31px;
+      display: grid;
+      place-items: center;
+      color: white;
+      border-radius: 10px;
+      background: linear-gradient(145deg, color-mix(in srgb, var(--stage) 88%, #fff), var(--stage));
+      font-size: 16px;
+      font-weight: 900;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.36), 0 0 18px color-mix(in srgb, var(--stage) 34%, transparent);
+    }
+
+    .stage-card strong {
+      display: block;
+      font-size: 15px;
+      line-height: 1.25;
+    }
+
+    .stage-card small {
+      display: block;
+      margin-top: 4px;
+      color: var(--stage);
+      font-size: 12px;
+      font-weight: 900;
+      line-height: 1.2;
+    }
+
+    body[data-theme="dark"] .stage-card,
+    body[data-theme="dark"] .flow-row,
+    body[data-theme="dark"] .object-card,
+    body[data-theme="dark"] .bottom-loop {
+      box-shadow:
+        0 0 0 1px color-mix(in srgb, var(--arrow) 10%, transparent),
+        0 0 24px color-mix(in srgb, var(--row, var(--stage, var(--blue))) 16%, transparent),
+        inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    }
+
+    body[data-theme="dark"] .cell {
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.11),
+        0 0 20px color-mix(in srgb, var(--tone) 13%, transparent);
+    }
+
+    body[data-theme="dark"] h1 {
+      text-shadow: 0 0 26px rgba(67, 216, 255, 0.34), 0 0 44px rgba(176, 116, 255, 0.18);
+    }
+
+    .process-grid {
+      display: contents;
+    }
+
+    .flow-row {
+      grid-column: 2;
+      min-height: 116px;
+      display: grid;
+      grid-template-columns: 1.42fr 0.56fr 0.72fr 0.56fr;
+      gap: 9px;
+      padding: 9px;
+      border: 1px solid color-mix(in srgb, var(--row) 34%, var(--glass-line));
+      border-radius: 18px;
+      background: var(--cell-bg);
+      box-shadow: var(--soft-shadow), inset 0 1px 0 var(--glass-highlight);
+      backdrop-filter: blur(var(--blur));
+      -webkit-backdrop-filter: blur(var(--blur));
+      align-self: stretch;
+    }
+
+    .cell {
+      min-width: 0;
+      position: relative;
+      border: 1px solid color-mix(in srgb, var(--tone) 36%, var(--glass-line));
+      border-radius: 13px;
+      background: var(--cell-inner);
+      box-shadow: inset 0 1px 0 var(--glass-highlight);
+      overflow: hidden;
+    }
+
+    .cell::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: linear-gradient(135deg, color-mix(in srgb, var(--tone) 10%, transparent), transparent 42%);
+      opacity: 0.88;
+    }
+
+    .cell h3 {
+      position: relative;
+      margin: 0;
+      padding: 6px 9px;
+      color: color-mix(in srgb, var(--tone) 82%, var(--ink));
+      background: linear-gradient(180deg, color-mix(in srgb, var(--tone) 16%, var(--header-fill)), var(--header-fill));
+      font-size: 13px;
+      text-align: center;
+      letter-spacing: 0.04em;
+      border-bottom: 1px solid color-mix(in srgb, var(--tone) 24%, var(--glass-line));
+      text-shadow: 0 0 14px color-mix(in srgb, var(--tone) 30%, transparent);
+    }
+
+    .cell-body {
+      position: relative;
+      padding: 8px 10px 9px;
+      font-size: 12px;
+      line-height: 1.56;
+    }
+
+    .cell-body ul {
+      margin: 0;
+      padding-left: 16px;
+    }
+
+    .cell-body li {
+      margin: 2px 0;
+    }
+
+    .lead {
+      margin: 0 0 7px;
+      font-weight: 850;
+      color: color-mix(in srgb, var(--row) 78%, var(--ink));
+    }
+
+    .pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-top: 7px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 22px;
+      padding: 3px 7px;
+      border: 1px solid color-mix(in srgb, var(--row) 38%, var(--glass-line));
+      border-radius: 999px;
+      color: color-mix(in srgb, var(--row) 76%, var(--ink));
+      background: var(--chip-bg);
+      box-shadow: inset 0 1px 0 var(--glass-highlight);
+      font-size: 11px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .mini-strip {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 5px;
+      margin-top: 7px;
+    }
+
+    .mini {
+      min-height: 34px;
+      display: grid;
+      place-items: center;
+      padding: 4px;
+      border: 1px solid color-mix(in srgb, var(--blue) 36%, var(--glass-line));
+      border-radius: 10px;
+      background: var(--chip-bg);
+      color: color-mix(in srgb, var(--blue) 78%, var(--ink));
+      box-shadow: inset 0 1px 0 var(--glass-highlight);
+      font-size: 11px;
+      font-weight: 850;
+      text-align: center;
+    }
+
+    .decision-wrap {
+      display: grid;
+      place-items: center;
+      margin: 2px 0;
+    }
+
+    .decision-svg {
+      width: min(100%, 210px);
+      height: auto;
+      overflow: visible;
+    }
+
+    .decision-diamond {
+      fill: var(--decision-fill);
+      stroke: var(--arrow);
+      stroke-width: 2;
+      filter: drop-shadow(0 0 8px var(--arrow-glow));
+    }
+
+    .decision-arrow {
+      fill: none;
+      stroke: var(--arrow);
+      stroke-width: 1.7;
+      filter: drop-shadow(0 0 5px var(--arrow-glow));
+    }
+
+    .decision-text {
+      fill: var(--ink);
+      font-size: 12px;
+      font-weight: 900;
+      text-anchor: middle;
+    }
+
+    .decision-label {
+      fill: var(--ink);
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .decision-marker {
+      fill: var(--arrow);
+    }
+
+    .route-note {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: 8px;
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .route-note::before,
+    .route-note::after {
+      content: "";
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--arrow), transparent);
+      opacity: 0.58;
+    }
+
+    .loop-panel {
+      margin-top: 7px;
+      padding: 6px 8px;
+      border: 1px dashed color-mix(in srgb, var(--row) 50%, var(--glass-line));
+      border-radius: 11px;
+      color: color-mix(in srgb, var(--row) 76%, var(--ink));
+      background: var(--chip-bg);
+      box-shadow: inset 0 1px 0 var(--glass-highlight);
+      font-size: 11px;
+      font-weight: 850;
+    }
+
+    .state-flow {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 5px;
+      margin-top: 8px;
+    }
+
+    .state {
+      padding: 3px 7px;
+      border: 1px solid color-mix(in srgb, var(--row) 34%, var(--glass-line));
+      border-radius: 999px;
+      background: var(--chip-bg);
+      color: var(--ink);
+      font-size: 10px;
+      font-weight: 850;
+    }
+
+    .arrow-word {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .bottom-loop {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: repeat(8, minmax(76px, 1fr));
+      gap: 20px;
+      align-items: center;
+      margin-top: 6px;
+      padding: 10px 18px;
+      border: 1px solid color-mix(in srgb, var(--teal) 42%, var(--glass-line));
+      border-radius: 18px;
+      background: var(--cell-bg);
+      box-shadow: var(--soft-shadow), inset 0 1px 0 var(--glass-highlight);
+      backdrop-filter: blur(var(--blur));
+      -webkit-backdrop-filter: blur(var(--blur));
+    }
+
+    .loop-step {
+      min-height: 42px;
+      display: grid;
+      place-items: center;
+      position: relative;
+      padding: 6px 8px;
+      border: 1px solid color-mix(in srgb, var(--teal) 40%, var(--glass-line));
+      border-radius: 10px;
+      background: var(--cell-inner);
+      color: var(--ink);
+      box-shadow: inset 0 1px 0 var(--glass-highlight);
+      font-size: 11px;
+      font-weight: 900;
+      text-align: center;
+    }
+
+    .loop-step:not(:last-child)::after {
+      content: "";
+      position: absolute;
+      right: -18px;
+      top: 50%;
+      width: 14px;
+      height: 2px;
+      border-radius: 999px;
+      background: var(--arrow);
+      box-shadow: 0 0 10px var(--arrow-glow);
+      transform: translateY(-50%);
+      z-index: 2;
+    }
+
+    .loop-step:not(:last-child)::before {
+      content: "";
+      position: absolute;
+      right: -22px;
+      top: calc(50% - 4px);
+      border-left: 7px solid var(--arrow);
+      border-top: 5px solid transparent;
+      border-bottom: 5px solid transparent;
+      filter: drop-shadow(0 0 6px var(--arrow-glow));
+      z-index: 3;
+    }
+
+    .objects {
+      display: contents;
+    }
+
+    .object-title {
+      display: none;
+      padding: 13px 14px;
+      border: 1px solid color-mix(in srgb, var(--blue) 45%, var(--glass-border));
+      border-radius: 18px;
+      color: var(--ink);
+      background: var(--cell-bg);
+      text-align: center;
+      font-size: 22px;
+      font-weight: 900;
+      box-shadow: var(--shadow), inset 0 1px 0 var(--glass-highlight);
+      backdrop-filter: blur(var(--blur));
+      -webkit-backdrop-filter: blur(var(--blur));
+    }
+
+    .object-slot {
+      grid-column: 3;
+      display: grid;
+      gap: 8px;
+      align-content: start;
+      align-self: stretch;
+    }
+
+    .stage-row > .stage-card,
+    .stage-row > .flow-row,
+    .stage-row > .object-slot {
+      grid-row: 1 !important;
+    }
+
+    .stage-card:nth-child(1),
+    .flow-row:nth-of-type(1),
+    .object-slot:nth-child(2) { grid-row: 1; }
+    .stage-card:nth-child(2),
+    .flow-row:nth-of-type(2),
+    .object-slot:nth-child(3) { grid-row: 2; }
+    .stage-card:nth-child(3),
+    .flow-row:nth-of-type(3),
+    .object-slot:nth-child(4) { grid-row: 3; }
+    .stage-card:nth-child(4),
+    .flow-row:nth-of-type(4),
+    .object-slot:nth-child(5) { grid-row: 4; }
+    .stage-card:nth-child(5),
+    .flow-row:nth-of-type(5),
+    .object-slot:nth-child(6) { grid-row: 5; }
+    .stage-card:nth-child(6),
+    .flow-row:nth-of-type(6),
+    .object-slot:nth-child(7) { grid-row: 6; }
+    .stage-card:nth-child(7),
+    .flow-row:nth-of-type(7),
+    .object-slot:nth-child(8) { grid-row: 7; }
+    .stage-card:nth-child(8),
+    .flow-row:nth-of-type(8),
+    .object-slot:nth-child(9) { grid-row: 8; }
+    .stage-card:nth-child(9),
+    .flow-row:nth-of-type(9),
+    .object-slot:nth-child(10) { grid-row: 9; }
+    .stage-card:nth-child(10),
+    .flow-row:nth-of-type(10),
+    .object-slot:nth-child(11) { grid-row: 10; }
+    .stage-card:nth-child(11),
+    .flow-row:nth-of-type(11),
+    .object-slot:nth-child(12) { grid-row: 11; }
+    .stage-card:nth-child(12),
+    .flow-row:nth-of-type(12),
+    .object-slot:nth-child(13) { grid-row: 12; }
+    .stage-card:nth-child(13),
+    .flow-row:nth-of-type(13),
+    .object-slot:nth-child(14) { grid-row: 13; }
+
+    .object-card {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: 36px 1fr;
+      gap: 8px;
+      align-items: center;
+      padding: 9px;
+      border: 1px solid color-mix(in srgb, var(--obj) 40%, var(--glass-line));
+      border-radius: 16px;
+      background: var(--cell-inner);
+      box-shadow: var(--soft-shadow), inset 0 1px 0 var(--glass-highlight);
+      backdrop-filter: blur(var(--blur));
+      -webkit-backdrop-filter: blur(var(--blur));
+    }
+
+    .object-icon {
+      width: 32px;
+      height: 32px;
+      display: grid;
+      place-items: center;
+      border: 1px solid color-mix(in srgb, var(--obj) 38%, var(--glass-line));
+      border-radius: 12px;
+      color: var(--obj);
+      background: color-mix(in srgb, var(--obj) 12%, var(--panel));
+      font-size: 20px;
+      box-shadow: inset 0 1px 0 var(--glass-highlight), 0 0 16px color-mix(in srgb, var(--obj) 26%, transparent);
+    }
+
+    .object-card strong {
+      display: block;
+      color: var(--obj);
+      font-size: 14px;
+      line-height: 1.2;
+    }
+
+    .object-stage {
+      display: inline-flex;
+      width: max-content;
+      margin-bottom: 4px;
+      padding: 2px 7px;
+      border: 1px solid color-mix(in srgb, var(--obj) 34%, var(--glass-line));
+      border-radius: 999px;
+      color: color-mix(in srgb, var(--obj) 80%, var(--ink));
+      background: var(--chip-bg);
+      font-size: 10px;
+      font-weight: 900;
+      line-height: 1.2;
+    }
+
+    .object-card span {
+      display: block;
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+      font-weight: 700;
+    }
+
+    .object-empty {
+      min-height: 64px;
+      display: grid;
+      align-content: center;
+      padding: 9px 10px;
+      border: 1px dashed color-mix(in srgb, var(--muted) 40%, var(--glass-line));
+      border-radius: 14px;
+      color: var(--muted);
+      background: var(--chip-bg);
+      box-shadow: inset 0 1px 0 var(--glass-highlight);
+      font-size: 12px;
+      font-weight: 850;
+      line-height: 1.35;
+      text-align: center;
+    }
+
+    .next-cycle {
+      min-height: 64px;
+      display: grid;
+      place-items: center;
+      padding: 11px 13px;
+      border: 1px dashed var(--arrow);
+      border-radius: 16px;
+      color: var(--ink);
+      background: var(--cell-inner);
+      box-shadow: inset 0 1px 0 var(--glass-highlight), 0 0 18px var(--arrow-glow);
+      font-weight: 900;
+      text-align: center;
+    }
+
+    @media (max-width: 900px) {
+      .frame {
+        display: block;
+      }
+
+      .stage-row {
+        grid-template-columns: 1fr;
+      }
+
+      .stage-card,
+      .flow-row,
+      .object-slot,
+      .bottom-loop {
+        grid-column: 1;
+        grid-row: auto !important;
+      }
+
+      .stage-card::before,
+      .stage-card::after {
+        display: none;
+      }
+
+      .stage-card {
+        min-height: 82px;
+      }
+
+      .flow-row {
+        grid-template-columns: 1fr;
+      }
+
+      .bottom-loop {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .loop-step::before,
+      .loop-step::after {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body data-theme="light">
+  <main class="page">
+    <header>
+      <h1>背单词模块 | 完整业务流程架构图</h1>
+      <p class="subtitle">任务驱动 × 场景承载 × 学习对象 × 记忆算法 × 学习反馈 × 评测分析</p>
+      <div class="theme-switch" aria-label="主题切换">
+        <button class="theme-btn is-active" type="button" data-theme-button="light">Light Glass</button>
+        <button class="theme-btn" type="button" data-theme-button="dark">Dark Neon</button>
+      </div>
+    </header>
+
+    <section class="frame" aria-label="背单词模块完整流程">
+      <aside class="stage-rail" aria-label="主流程阶段">
+        <div class="stage-card" style="--stage: var(--blue);"><div class="stage-no">1</div><div><strong>进入模块</strong><small>初始化判断</small></div></div>
+        <div class="stage-card" style="--stage: var(--blue);"><div class="stage-no">2</div><div><strong>目标设定</strong><small>任务驱动</small></div></div>
+        <div class="stage-card" style="--stage: var(--blue);"><div class="stage-no">3</div><div><strong>场景与素材</strong><small>场景承载</small></div></div>
+        <div class="stage-card" style="--stage: var(--blue);"><div class="stage-no">4</div><div><strong>词库选择</strong><small>学习对象</small></div></div>
+        <div class="stage-card" style="--stage: var(--blue);"><div class="stage-no">5</div><div><strong>计划生成</strong><small>任务编排</small></div></div>
+        <div class="stage-card" style="--stage: var(--blue);"><div class="stage-no">6</div><div><strong>今日任务</strong><small>学习控制台</small></div></div>
+        <div class="stage-card" style="--stage: var(--blue);"><div class="stage-no">7</div><div><strong>新词学习</strong><small>主观掌握</small></div></div>
+        <div class="stage-card" style="--stage: var(--blue);"><div class="stage-no">8</div><div><strong>即时练习</strong><small>答题记录</small></div></div>
+        <div class="stage-card" style="--stage: var(--orange);"><div class="stage-no">9</div><div><strong>学习反馈</strong><small>错因判断</small></div></div>
+        <div class="stage-card" style="--stage: var(--red);"><div class="stage-no">10</div><div><strong>错词处理</strong><small>强化机制</small></div></div>
+        <div class="stage-card" style="--stage: var(--green);"><div class="stage-no">11</div><div><strong>间隔复习</strong><small>记忆算法</small></div></div>
+        <div class="stage-card" style="--stage: var(--purple);"><div class="stage-no">12</div><div><strong>阶段测试</strong><small>评测分析</small></div></div>
+        <div class="stage-card" style="--stage: var(--teal);"><div class="stage-no">13</div><div><strong>报告与调整</strong><small>下一轮任务</small></div></div>
+      </aside>
+
+      <section class="process-grid" aria-label="流程泳道">
+        <article class="flow-row" style="--row: var(--blue);">
+          <div class="cell" style="--tone: var(--blue);">
+            <h3>流程内容</h3>
+            <div class="cell-body">
+              <p class="lead">主程序入口进入模块</p>
+              <ul>
+                <li>入口：首页今日任务 / 学习中心 / 英语学习页 / 课程生词 / 个人计划 / AI 推荐。</li>
+                <li>系统先判断用户是否已经完成背词计划初始化。</li>
+              </ul>
+              <div class="decision-wrap">
+                <svg class="decision-svg" viewBox="0 0 310 120" role="img" aria-label="是否已初始化背词计划">
+                  <defs>
+                    <marker id="arrow-init" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon class="decision-marker" points="0 0,8 3,0 6" /></marker>
+                  </defs>
+                  <polygon class="decision-diamond" points="130,10 246,58 130,106 14,58" />
+                  <text class="decision-text" x="130" y="52">是否已初始化</text>
+                  <text class="decision-text" x="130" y="69">背词计划?</text>
+                  <line class="decision-arrow" x1="246" y1="58" x2="296" y2="58" marker-end="url(#arrow-init)" />
+                  <text class="decision-label" x="265" y="48">是</text>
+                  <line class="decision-arrow" x1="130" y1="106" x2="130" y2="118" marker-end="url(#arrow-init)" />
+                  <text class="decision-label" x="107" y="116">否</text>
+                </svg>
+              </div>
+              <div class="route-note">是：今日任务页 / 否：目标设定</div>
+            </div>
+          </div>
+          <div class="cell" style="--tone: var(--blue);"><h3>用户动作</h3><div class="cell-body"><ul><li>点击背单词入口。</li><li>等待模块加载。</li><li>首次使用时开始初始化。</li><li>非首次使用时查看今日任务。</li></ul></div></div>
+          <div class="cell" style="--tone: var(--blue);"><h3>系统动作</h3><div class="cell-body"><ul><li>检查登录状态。</li><li>检查 `VocabularyProfile`。</li><li>检查当前 `StudyPlan`。</li><li>检查今日任务是否已生成。</li></ul></div></div>
+          <div class="cell" style="--tone: var(--green);"><h3>数据沉淀</h3><div class="cell-body"><ul><li>模块状态。</li><li>初始化状态。</li><li>当前计划 ID。</li><li>当前词库 ID。</li><li>今日任务状态。</li></ul></div></div>
+        </article>
+
+        <article class="flow-row" style="--row: var(--blue);">
+          <div class="cell" style="--tone: var(--blue);"><h3>流程内容</h3><div class="cell-body"><p class="lead">目标、水平、强度、偏好</p><ul><li>学习目标：四六级 / 考研 / 雅思 / 托福 / 商务英语 / 日常英语 / 阅读提升 / 课程学习 / 自定义。</li><li>学习偏好：记忆、拼写、听力、例句、考试、阅读理解、口语表达、商务表达。</li></ul><div class="pill-row"><span class="pill">长期目标</span><span class="pill">每日强度</span><span class="pill">题型偏好</span><span class="pill">推荐依据</span></div></div></div>
+          <div class="cell" style="--tone: var(--blue);"><h3>用户动作</h3><div class="cell-body"><ul><li>选择学习目标。</li><li>选择当前水平。</li><li>设置每日学习强度。</li><li>选择学习偏好。</li></ul></div></div>
+          <div class="cell" style="--tone: var(--blue);"><h3>系统动作</h3><div class="cell-body"><ul><li>推荐学习场景。</li><li>推荐词库方向。</li><li>设置初始难度。</li><li>计算任务量。</li><li>调整题型比例。</li></ul></div></div>
+          <div class="cell" style="--tone: var(--green);"><h3>数据沉淀</h3><div class="cell-body"><ul><li>目标 / 水平。</li><li>每日强度。</li><li>学习偏好。</li><li>计划草案。</li><li>推荐记录。</li></ul></div></div>
+        </article>
+
+        <article class="flow-row" style="--row: var(--blue);">
+          <div class="cell" style="--tone: var(--blue);"><h3>流程内容</h3><div class="cell-body"><p class="lead">单词先绑定场景，再进入词库</p><ul><li>学习场景：考试、商务、日常口语、学术阅读、新闻阅读、课程学习、旅行交流、自定义。</li><li>素材来源：官方词库、考试词库、自定义词库、文章生词、课程生词、笔记生词、AI 生成、导入表。</li></ul><div class="pill-row"><span class="pill">场景标签</span><span class="pill">素材来源</span><span class="pill">生词提取</span><span class="pill">AI 生成</span></div></div></div>
+          <div class="cell" style="--tone: var(--blue);"><h3>用户动作</h3><div class="cell-body"><ul><li>选择学习场景。</li><li>选择素材来源。</li><li>确认系统推荐。</li><li>上传或选择素材。</li></ul></div></div>
+          <div class="cell" style="--tone: var(--blue);"><h3>系统动作</h3><div class="cell-body"><ul><li>匹配推荐场景。</li><li>推荐素材来源。</li><li>提取内容生词。</li><li>生成 AI 词表。</li><li>绑定来源信息。</li></ul></div></div>
+          <div class="cell" style="--tone: var(--green);"><h3>数据沉淀</h3><div class="cell-body"><ul><li>场景选择。</li><li>素材来源。</li><li>场景标签。</li><li>来源记录。</li><li>导入记录。</li></ul></div></div>
+        </article>
+
+        <article class="flow-row" style="--row: var(--blue);">
+          <div class="cell" style="--tone: var(--blue);"><h3>流程内容</h3><div class="cell-body"><p class="lead">确认词库或生成词库</p><ul><li>词库类型：官方、考试、自定义、内容生词本、AI 生成词库。</li><li>用户可以查看总量、难度、预计完成时间和词库范围。</li></ul><div class="mini-strip"><div class="mini">官方词库</div><div class="mini">考试词库</div><div class="mini">内容生词</div><div class="mini">AI 生成</div></div></div></div>
+          <div class="cell" style="--tone: var(--blue);"><h3>用户动作</h3><div class="cell-body"><ul><li>查看推荐词库。</li><li>选择词库。</li><li>查看详情。</li><li>确认使用。</li><li>调整范围。</li></ul></div></div>
+          <div class="cell" style="--tone: var(--blue);"><h3>系统动作</h3><div class="cell-body"><ul><li>加载词库数据。</li><li>初始化词库进度。</li><li>标记初始状态。</li><li>绑定词库、场景、来源。</li></ul></div></div>
+          <div class="cell" style="--tone: var(--green);"><h3>数据沉淀</h3><div class="cell-body"><ul><li>用户词库关系。</li><li>词库进度。</li><li>初始 item 状态。</li><li>来源与标签。</li></ul></div></div>
+        </article>
+
+        <article class="flow-row" style="--row: var(--blue);">
+          <div class="cell" style="--tone: var(--blue);"><h3>流程内容</h3><div class="cell-body"><p class="lead">学习计划生成是独立步骤</p><ul><li>输入：目标、水平、强度、偏好、场景、词库、词库规模、难度。</li><li>输出：每日新词、复习上限、测试周期、预计完成时间、题型比例、首轮任务规则。</li></ul><div class="loop-panel">不可跳过：计划生成完成后，才允许进入今日任务页。</div></div></div>
+          <div class="cell" style="--tone: var(--blue);"><h3>用户动作</h3><div class="cell-body"><ul><li>查看计划预览。</li><li>确认每日任务量。</li><li>确认题型偏好。</li><li>确认生成今日任务。</li></ul></div></div>
+          <div class="cell" style="--tone: var(--blue);"><h3>系统动作</h3><div class="cell-body"><ul><li>创建 `StudyPlan`。</li><li>初始化 item 状态。</li><li>计算完成时间。</li><li>生成首轮任务规则。</li></ul></div></div>
+          <div class="cell" style="--tone: var(--green);"><h3>数据沉淀</h3><div class="cell-body"><ul><li>学习计划 ID。</li><li>计划版本。</li><li>生成原因。</li><li>测试周期。</li><li>预计完成日。</li></ul></div></div>
+        </article>
+
+        <article class="flow-row" style="--row: var(--blue);">
+          <div class="cell" style="--tone: var(--blue);"><h3>流程内容</h3><div class="cell-body"><p class="lead">今日任务页是学习控制台</p><ul><li>展示今日新词、复习、错词强化、测试任务、预计时间。</li><li>展示已学、已掌握、待复习、易错词、总进度和当前场景。</li></ul><div class="mini-strip"><div class="mini">开始学习</div><div class="mini">继续上次</div><div class="mini">复习错词</div><div class="mini">查看报告</div></div></div></div>
+          <div class="cell" style="--tone: var(--blue);"><h3>用户动作</h3><div class="cell-body"><ul><li>查看今日任务。</li><li>选择快速操作。</li><li>进入学习、复习、错词、报告或设置。</li></ul></div></div>
+          <div class="cell" style="--tone: var(--blue);"><h3>系统动作</h3><div class="cell-body"><ul><li>根据计划取新词。</li><li>根据 `nextReviewAt` 取复习词。</li><li>根据错词记录取强化词。</li><li>判断阶段测试。</li><li>生成建议。</li></ul></div></div>
+          <div class="cell" style="--tone: var(--green);"><h3>数据沉淀</h3><div class="cell-body"><ul><li>`DailyVocabularyTask`。</li><li>任务状态。</li><li>生成原因。</li><li>任务完成度。</li><li>建议记录。</li></ul></div></div>
+        </article>
+
+        <article class="flow-row" style="--row: var(--blue);">
+          <div class="cell" style="--tone: var(--blue);"><h3>流程内容</h3><div class="cell-body"><p class="lead">学习一组新词</p><ul><li>每组建议 10 到 20 个 LearningItem。</li><li>单词卡包含音标、发音、释义、例句、场景、来源、词根词缀、近反义、搭配、AI 记忆法。</li></ul><div class="state-flow"><span class="state">认识 -> familiar</span><span class="state">模糊 -> weak</span><span class="state">不认识 -> learning</span></div></div></div>
+          <div class="cell" style="--tone: var(--blue);"><h3>用户动作</h3><div class="cell-body"><ul><li>浏览单词卡。</li><li>播放发音。</li><li>查看释义例句。</li><li>选择认识 / 模糊 / 不认识。</li><li>收藏或加入错词本。</li></ul></div></div>
+          <div class="cell" style="--tone: var(--blue);"><h3>系统动作</h3><div class="cell-body"><ul><li>记录首次学习时间。</li><li>记录主观掌握度。</li><li>更新状态。</li><li>加入练习队列。</li><li>调整 `masteryScore`。</li></ul></div></div>
+          <div class="cell" style="--tone: var(--green);"><h3>数据沉淀</h3><div class="cell-body"><ul><li>学习记录。</li><li>主观掌握度。</li><li>状态变化。</li><li>学习会话。</li></ul></div></div>
+        </article>
+
+        <article class="flow-row" style="--row: var(--blue);">
+          <div class="cell" style="--tone: var(--blue);"><h3>流程内容</h3><div class="cell-body"><p class="lead">完成一组新词后自动进入练习</p><ul><li>MVP 题型：看英文选中文、看中文选英文、拼写输入。</li><li>扩展题型：听音选词、例句填空、单词配对、判断正误。</li></ul><div class="mini-strip"><div class="mini">英选中</div><div class="mini">中选英</div><div class="mini">拼写</div><div class="mini">反馈</div></div></div></div>
+          <div class="cell" style="--tone: var(--blue);"><h3>用户动作</h3><div class="cell-body"><ul><li>做练习题。</li><li>提交答案。</li><li>查看反馈。</li><li>继续下一题。</li><li>查看本组结果。</li></ul></div></div>
+          <div class="cell" style="--tone: var(--blue);"><h3>系统动作</h3><div class="cell-body"><ul><li>生成练习题。</li><li>判断答案。</li><li>识别错误类型。</li><li>更新掌握度。</li><li>答错加入错词本。</li><li>答对进入复习队列。</li></ul></div></div>
+          <div class="cell" style="--tone: var(--green);"><h3>数据沉淀</h3><div class="cell-body"><ul><li>`PracticeRecord`。</li><li>正确率。</li><li>错误类型。</li><li>响应时间。</li><li>练习会话。</li></ul></div></div>
+        </article>
+
+        <article class="flow-row" style="--row: var(--orange);">
+          <div class="cell" style="--tone: var(--orange);"><h3>流程内容</h3><div class="cell-body"><p class="lead">即时反馈与后续处理</p><ul><li>反馈内容：是否正确、正确答案、错误类型、简短解释、场景例句、后续处理。</li><li>错误类型：不认识、释义混淆、拼写错误、听音错误、语境错误、反向回忆失败。</li></ul><div class="decision-wrap">
+                <svg class="decision-svg" viewBox="0 0 310 120" role="img" aria-label="答错了吗">
+                  <defs>
+                    <marker id="arrow-wrong" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon class="decision-marker" points="0 0,8 3,0 6" /></marker>
+                  </defs>
+                  <polygon class="decision-diamond" points="130,10 246,58 130,106 14,58" />
+                  <text class="decision-text" x="130" y="64">答错了吗?</text>
+                  <line class="decision-arrow" x1="246" y1="58" x2="296" y2="58" marker-end="url(#arrow-wrong)" />
+                  <text class="decision-label" x="265" y="48">否</text>
+                  <text class="decision-label" x="250" y="83">进入复习队列</text>
+                  <line class="decision-arrow" x1="130" y1="106" x2="130" y2="118" marker-end="url(#arrow-wrong)" />
+                  <text class="decision-label" x="107" y="116">是</text>
+                </svg>
+              </div><div class="route-note">是：错词处理 / 否：复习调度</div></div></div>
+          <div class="cell" style="--tone: var(--orange);"><h3>用户动作</h3><div class="cell-body"><ul><li>查看反馈。</li><li>理解错因。</li><li>继续下一题。</li><li>可选查看更多解释。</li></ul></div></div>
+          <div class="cell" style="--tone: var(--orange);"><h3>系统动作</h3><div class="cell-body"><ul><li>判断错误类型。</li><li>生成解释。</li><li>绑定错因标签。</li><li>决定是否进入错词本。</li><li>安排强化任务。</li></ul></div></div>
+          <div class="cell" style="--tone: var(--green);"><h3>数据沉淀</h3><div class="cell-body"><ul><li>错误类型。</li><li>错因标签。</li><li>反馈查看记录。</li><li>强化任务标记。</li></ul></div></div>
+        </article>
+
+        <article class="flow-row" style="--row: var(--red);">
+          <div class="cell" style="--tone: var(--red);"><h3>流程内容</h3><div class="cell-body"><p class="lead">错词进入强化机制</p><ul><li>不认识 -> 重新学习卡片。</li><li>释义混淆 -> 近义词辨析。</li><li>拼写错误 -> 拼写训练。</li><li>听音错误 -> 听音训练。</li><li>语境错误 -> 例句填空。</li></ul><div class="loop-panel">移出规则：连续答对 2 到 3 次，或掌握度达阈值，或最近一次复测通过。</div></div></div>
+          <div class="cell" style="--tone: var(--red);"><h3>用户动作</h3><div class="cell-body"><ul><li>查看错词本。</li><li>查看错误原因。</li><li>进行错词复测。</li><li>进行专项强化。</li></ul></div></div>
+          <div class="cell" style="--tone: var(--red);"><h3>系统动作</h3><div class="cell-body"><ul><li>自动收集错词。</li><li>合并重复记录。</li><li>更新错误次数。</li><li>记录错误类型。</li><li>判断是否解决。</li></ul></div></div>
+          <div class="cell" style="--tone: var(--green);"><h3>数据沉淀</h3><div class="cell-body"><ul><li>`WrongItemRecord`。</li><li>错因历史。</li><li>错误次数。</li><li>复测结果。</li><li>resolved 状态。</li></ul></div></div>
+        </article>
+
+        <article class="flow-row" style="--row: var(--green);">
+          <div class="cell" style="--tone: var(--green);"><h3>流程内容</h3><div class="cell-body"><p class="lead">间隔复习与状态流转</p><ul><li>优先级：错词 > 即将遗忘词 > 今日到期词 > 新学词 > 已掌握词抽查。</li><li>答对延长间隔，答错缩短间隔，连续答错回到学习流程，稳定答对标记掌握。</li></ul><div class="state-flow"><span class="state">new</span><span class="arrow-word">-></span><span class="state">learning</span><span class="arrow-word">-></span><span class="state">familiar</span><span class="arrow-word">-></span><span class="state">reviewing</span><span class="arrow-word">-></span><span class="state">mastered</span></div><div class="loop-panel">错词回流：wrong -> weak -> reviewing -> mastered。</div></div></div>
+          <div class="cell" style="--tone: var(--green);"><h3>用户动作</h3><div class="cell-body"><ul><li>进入今日复习。</li><li>完成复习题。</li><li>查看复习反馈。</li><li>查看复习结果。</li></ul></div></div>
+          <div class="cell" style="--tone: var(--green);"><h3>系统动作</h3><div class="cell-body"><ul><li>查询到期复习词。</li><li>按优先级排序。</li><li>生成复习题。</li><li>更新 `nextReviewAt`。</li><li>更新 `masteryScore`。</li></ul></div></div>
+          <div class="cell" style="--tone: var(--green);"><h3>数据沉淀</h3><div class="cell-body"><ul><li>复习计划。</li><li>`lastReviewedAt`。</li><li>`nextReviewAt`。</li><li>间隔天数。</li><li>掌握度变化。</li></ul></div></div>
+        </article>
+
+        <article class="flow-row" style="--row: var(--purple);">
+          <div class="cell" style="--tone: var(--purple);"><h3>流程内容</h3><div class="cell-body"><p class="lead">阶段测试触发与评测分析</p><ul><li>触发：每学习 100 个词、每 7 天、完成一个单元、考试冲刺、用户手动发起。</li><li>内容：识别、反向、听力、拼写、语境、综合测试。</li></ul><div class="pill-row"><span class="pill">总分</span><span class="pill">正确率</span><span class="pill">掌握率</span><span class="pill">薄弱词</span><span class="pill">薄弱题型</span></div></div></div>
+          <div class="cell" style="--tone: var(--purple);"><h3>用户动作</h3><div class="cell-body"><ul><li>开始阶段测试。</li><li>完成测试题。</li><li>查看测试结果。</li><li>查看下一阶段建议。</li></ul></div></div>
+          <div class="cell" style="--tone: var(--purple);"><h3>系统动作</h3><div class="cell-body"><ul><li>抽取已学词、弱词、错词。</li><li>生成混合测试。</li><li>计算分数。</li><li>识别薄弱项。</li><li>生成建议。</li></ul></div></div>
+          <div class="cell" style="--tone: var(--green);"><h3>数据沉淀</h3><div class="cell-body"><ul><li>测试结果。</li><li>测试题记录。</li><li>掌握率。</li><li>薄弱词。</li><li>能力变化。</li></ul></div></div>
+        </article>
+
+        <article class="flow-row" style="--row: var(--teal);">
+          <div class="cell" style="--tone: var(--teal);"><h3>流程内容</h3><div class="cell-body"><p class="lead">学习报告反向调整计划</p><ul><li>报告：今日报告、周报告、总体报告。</li><li>计划调整：判断新词量、复习负荷、错词压力、题型比例和测试周期。</li></ul><div class="loop-panel">报告不是终点，报告是下一轮任务生成的输入。</div></div></div>
+          <div class="cell" style="--tone: var(--teal);"><h3>用户动作</h3><div class="cell-body"><ul><li>查看报告。</li><li>查看 AI 建议。</li><li>接受默认调整。</li><li>或手动修改强度和偏好。</li></ul></div></div>
+          <div class="cell" style="--tone: var(--teal);"><h3>系统动作</h3><div class="cell-body"><ul><li>统计学习数据。</li><li>计算正确率、掌握率、任务完成度。</li><li>识别薄弱项。</li><li>调整明日任务。</li><li>生成下一轮任务。</li></ul></div></div>
+          <div class="cell" style="--tone: var(--green);"><h3>数据沉淀</h3><div class="cell-body"><ul><li>`LearningReport`。</li><li>趋势数据。</li><li>计划版本。</li><li>调整原因。</li><li>下一轮任务。</li></ul></div></div>
+        </article>
+
+        <div class="bottom-loop" aria-label="闭环回流">
+          <div class="loop-step">用户目标 / 偏好</div>
+          <div class="loop-step">场景 / 素材</div>
+          <div class="loop-step">词库 / 学习对象</div>
+          <div class="loop-step">学习记录 / 答题记录</div>
+          <div class="loop-step">错词记录 / 复习计划</div>
+          <div class="loop-step">测试结果 / 学习报告</div>
+          <div class="loop-step">计划调整</div>
+          <div class="loop-step">新一轮任务</div>
+        </div>
+      </section>
+
+      <aside class="objects" aria-label="核心对象">
+        <div class="object-title">核心对象</div>
+        <div class="object-slot"><div class="object-card" style="--obj: var(--blue);"><div class="object-icon">●</div><div><small class="object-stage">阶段 1</small><strong>VocabularyProfile</strong><span>初始化状态、用户词汇画像和当前计划判断。</span></div></div></div>
+        <div class="object-slot"><div class="object-empty">沿用 VocabularyProfile<br />补齐目标、水平、偏好。</div></div>
+        <div class="object-slot">
+          <div class="object-card" style="--obj: var(--green);"><div class="object-icon">◆</div><div><small class="object-stage">阶段 3</small><strong>LearningScenario</strong><span>学习场景：考试、商务、日常、阅读、课程等。</span></div></div>
+          <div class="object-card" style="--obj: var(--orange);"><div class="object-icon">▣</div><div><small class="object-stage">阶段 3</small><strong>MaterialSource</strong><span>词库、课程、笔记、文章、AI、导入表。</span></div></div>
+        </div>
+        <div class="object-slot">
+          <div class="object-card" style="--obj: var(--purple);"><div class="object-icon">Aa</div><div><small class="object-stage">阶段 4</small><strong>LearningItem</strong><span>单词/短语/句型等学习对象抽象。</span></div></div>
+          <div class="object-card" style="--obj: var(--blue);"><div class="object-icon">▤</div><div><small class="object-stage">阶段 4</small><strong>WordBook</strong><span>一组关联学习对象和难度范围。</span></div></div>
+        </div>
+        <div class="object-slot"><div class="object-card" style="--obj: var(--teal);"><div class="object-icon">□</div><div><small class="object-stage">阶段 5</small><strong>StudyPlan</strong><span>每日任务量、复习上限、测试周期和版本。</span></div></div></div>
+        <div class="object-slot"><div class="object-card" style="--obj: var(--orange);"><div class="object-icon">▦</div><div><small class="object-stage">阶段 6</small><strong>DailyVocabularyTask</strong><span>新词、复习、错词强化和测试安排。</span></div></div></div>
+        <div class="object-slot"><div class="object-card" style="--obj: var(--teal);"><div class="object-icon">☰</div><div><small class="object-stage">阶段 7</small><strong>UserLearningItemState</strong><span>掌握度、间隔、状态与学习计数。</span></div></div></div>
+        <div class="object-slot"><div class="object-card" style="--obj: var(--blue);"><div class="object-icon">✓</div><div><small class="object-stage">阶段 8</small><strong>PracticeRecord</strong><span>题型、答案、耗时、正误和上下文。</span></div></div></div>
+        <div class="object-slot"><div class="object-card" style="--obj: var(--blue);"><div class="object-icon">✓</div><div><small class="object-stage">阶段 9</small><strong>PracticeRecord</strong><span>反馈判断、错因归类和本轮表现。</span></div></div></div>
+        <div class="object-slot"><div class="object-card" style="--obj: var(--red);"><div class="object-icon">!</div><div><small class="object-stage">阶段 10</small><strong>WrongItemRecord</strong><span>错误次数、错因、下次复习和解决状态。</span></div></div></div>
+        <div class="object-slot">
+          <div class="object-card" style="--obj: var(--teal);"><div class="object-icon">☰</div><div><small class="object-stage">阶段 11</small><strong>UserLearningItemState</strong><span>按复习结果更新状态和间隔。</span></div></div>
+          <div class="object-card" style="--obj: var(--red);"><div class="object-icon">!</div><div><small class="object-stage">阶段 11</small><strong>WrongItemRecord</strong><span>错词回流、复测结果和 resolved 状态。</span></div></div>
+        </div>
+        <div class="object-slot"><div class="object-card" style="--obj: var(--purple);"><div class="object-icon">◇</div><div><small class="object-stage">阶段 12</small><strong>VocabularyAssessmentResult</strong><span>总分、掌握率、薄弱词、题型和能力变化。</span></div></div></div>
+        <div class="object-slot">
+          <div class="object-card" style="--obj: var(--teal);"><div class="object-icon">↗</div><div><small class="object-stage">阶段 13</small><strong>LearningReport</strong><span>正确率、掌握率、趋势、建议和薄弱项。</span></div></div>
+          <div class="next-cycle">下一轮学习<br />回到今日任务</div>
+        </div>
+      </aside>
+    </section>
+  </main>
+  <script>
+    const themeButtons = Array.from(document.querySelectorAll("[data-theme-button]"));
+
+    const buildStageLayout = () => {
+      const frame = document.querySelector(".frame");
+      const stageRail = document.querySelector(".stage-rail");
+      const processGrid = document.querySelector(".process-grid");
+      const objects = document.querySelector(".objects");
+
+      if (!frame || !stageRail || !processGrid || !objects || frame.querySelector(".stage-layout")) {
+        return;
+      }
+
+      const stages = Array.from(stageRail.querySelectorAll(".stage-card"));
+      const rows = Array.from(processGrid.querySelectorAll(".flow-row"));
+      const slots = Array.from(objects.querySelectorAll(".object-slot"));
+      const bottomLoop = processGrid.querySelector(".bottom-loop");
+      const layout = document.createElement("div");
+      layout.className = "stage-layout";
+
+      rows.forEach((row, index) => {
+        const stageRow = document.createElement("div");
+        stageRow.className = "stage-row";
+        if (stages[index]) stageRow.appendChild(stages[index]);
+        stageRow.appendChild(row);
+        if (slots[index]) stageRow.appendChild(slots[index]);
+        layout.appendChild(stageRow);
+      });
+
+      if (bottomLoop) bottomLoop.remove();
+      frame.prepend(layout);
+      stageRail.remove();
+      processGrid.remove();
+      objects.remove();
+      if (bottomLoop) frame.appendChild(bottomLoop);
+    };
+
+    buildStageLayout();
+
+    const applyTheme = (theme) => {
+      const nextTheme = theme === "dark" ? "dark" : "light";
+      document.body.dataset.theme = nextTheme;
+      themeButtons.forEach((button) => {
+        button.classList.toggle("is-active", button.dataset.themeButton === nextTheme);
+      });
+      localStorage.setItem("vocabulary-flow-theme", nextTheme);
+    };
+
+    applyTheme(localStorage.getItem("vocabulary-flow-theme") || "light");
+
+    themeButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        applyTheme(button.dataset.themeButton);
+      });
+    });
+  </script>
+</body>
+</html>
