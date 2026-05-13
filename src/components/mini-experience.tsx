@@ -1,10 +1,10 @@
 "use client";
 
 import type { SpeechEvaluationResult } from "@/lib/ai/types";
-import { VocabularyLearningModule } from "@/features/vocabulary/vocabulary-learning-module";
+import { CelebratingConfetti, VocabularyLearningModule } from "@/features/vocabulary/vocabulary-learning-module";
 import type { SeedData } from "@/lib/domain";
 import type { EChartsType } from "echarts";
-import type { CSSProperties } from "react";
+import type { CSSProperties, PointerEvent, ReactNode } from "react";
 import {
   ArrowLeft,
   BadgeCheck,
@@ -12,6 +12,7 @@ import {
   BarChart3,
   BookOpen,
   CalendarDays,
+  Check,
   ChevronLeft,
   ChevronRight,
   Compass,
@@ -30,7 +31,8 @@ import {
   Ticket,
   UserRound,
   Users,
-  Volume2
+  Volume2,
+  X
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
@@ -210,11 +212,15 @@ export function MiniExperience({ seed, audience = "student" }: { seed: SeedData;
             )}
             {tab === "study" && studyMode === "speech" && (
               <MotionScreen key="speech">
-                <SpeechTask
-                  evaluation={evaluation}
-                  evaluating={evaluating}
-                  runEvaluation={runEvaluation}
+                <SpeakingLearningModule
                   onBack={() => setStudyMode("overview")}
+                  onDailyComplete={(score) =>
+                    setTodayCheckin((current) => ({
+                      ...current,
+                      speechDone: true,
+                      speechScore: Math.max(current.speechScore, score)
+                    }))
+                  }
                 />
               </MotionScreen>
             )}
@@ -962,6 +968,9 @@ function YearCalendarView({ openTask }: { openTask: (mode: StudyMode) => void })
 
 function CirclePage({ filter, setFilter }: { filter: CircleFilter; setFilter: (filter: CircleFilter) => void }) {
   const feedRef = useRef<HTMLDivElement | null>(null);
+  const [selectedItem, setSelectedItem] = useState<(typeof circleItems)[number] | null>(null);
+  const [pointsOpen, setPointsOpen] = useState(false);
+  const [confettiOpen, setConfettiOpen] = useState(false);
   const visibleItems = circleItems.filter((item) => filter === "all" || item.type === filter);
 
   useLayoutEffect(() => {
@@ -1030,6 +1039,7 @@ function CirclePage({ filter, setFilter }: { filter: CircleFilter; setFilter: (f
           <article
             className={`feed-card ${item.tone} ${item.height}`}
             key={`${item.title}-${index}`}
+            onClick={() => setSelectedItem(item)}
           >
             <div className="feed-visual">
               <img src={item.image} alt="" aria-hidden="true" />
@@ -1044,7 +1054,71 @@ function CirclePage({ filter, setFilter }: { filter: CircleFilter; setFilter: (f
           </article>
         ))}
       </div>
+      {selectedItem && (
+        <CircleDetailModal
+          item={selectedItem}
+          onClose={() => setSelectedItem(null)}
+          onShare={() => {
+            setConfettiOpen(true);
+            setPointsOpen(true);
+            window.setTimeout(() => setPointsOpen(false), 3000);
+          }}
+        />
+      )}
+      {confettiOpen && <CircleConfetti onDone={() => setConfettiOpen(false)} />}
+      {pointsOpen && <PointsToast />}
     </section>
+  );
+}
+
+function CircleDetailModal({ item, onClose, onShare }: { item: (typeof circleItems)[number]; onClose: () => void; onShare: () => void }) {
+  return (
+    <div className="circle-detail-overlay" role="dialog" aria-modal="true" aria-label="圈子内容详情">
+      <section className={`circle-detail-card ${item.tone}`}>
+        <button className="circle-detail-close" type="button" aria-label="关闭详情" onClick={onClose}>
+          <X size={17} />
+        </button>
+        <img src={item.image} alt="" aria-hidden="true" />
+        <span>{item.tag} · {item.pay}</span>
+        <h2>{item.title}</h2>
+        <p>{item.type === "event" ? "查看活动时间、报名方式和参与权益，适合加入近期学习计划。" : item.type === "resource" ? "这份资料适合配合今日任务使用，可收藏后反复查看。" : "这篇笔记整理了关键方法和行动清单，适合学习前快速建立思路。"}</p>
+        <div>
+          <b>推荐指数 96</b>
+          <b>预计阅读 4 分钟</b>
+        </div>
+        <button className="circle-share-button" type="button" onClick={onShare}>
+          <Share2 size={17} />
+          分享获取积分
+        </button>
+      </section>
+    </div>
+  );
+}
+
+function PointsToast() {
+  return (
+    <div className="points-toast" role="status">
+      <BadgeCheck size={20} />
+      <div>
+        <strong>恭喜获取积分:20 分</strong>
+        <span>分享奖励已入账</span>
+      </div>
+    </div>
+  );
+}
+
+function CircleConfetti({ onDone }: { onDone: () => void }) {
+  useEffect(() => {
+    const timer = window.setTimeout(onDone, 1200);
+    return () => window.clearTimeout(timer);
+  }, [onDone]);
+
+  return (
+    <div className="circle-confetti" aria-hidden="true">
+      {Array.from({ length: 22 }).map((_, index) => (
+        <i key={index} style={{ "--x": `${(index % 7) * 34 - 100}px`, "--y": `${Math.floor(index / 7) * -34 - 30}px`, "--r": `${index * 31}deg` } as CSSProperties & Record<"--x" | "--y" | "--r", string>} />
+      ))}
+    </div>
   );
 }
 
@@ -1094,6 +1168,472 @@ function AIChatPage({ onClose }: { onClose: () => void }) {
         </button>
       </div>
     </motion.section>
+  );
+}
+
+const speakingSentences = [
+  {
+    en: "I usually go to school by bus and read English after class.",
+    cn: "我通常坐公交去学校，并且课后读英语。",
+    scene: "校园日常",
+    tip: "注意 usually 和 after class 的连读节奏。"
+  },
+  {
+    en: "Could you tell me how to get to the nearest subway station?",
+    cn: "你能告诉我怎么去最近的地铁站吗？",
+    scene: "生活问路",
+    tip: "Could you tell me 保持礼貌语气，nearest 重音清晰。"
+  }
+];
+
+type SpeakingStep = "goal" | "scenario" | "material" | "preference" | "plan" | "home" | "practice" | "report";
+
+function SpeakingLearningModule({ onBack, onDailyComplete }: { onBack: () => void; onDailyComplete: (score: number) => void }) {
+  const [step, setStep] = useState<SpeakingStep>("goal");
+  const [goal, setGoal] = useState("中考口语");
+  const [scenario, setScenario] = useState("校园表达");
+  const [material, setMaterial] = useState("A Day at School");
+  const [preference, setPreference] = useState("发音优先");
+  const [generating, setGenerating] = useState(false);
+  const [sentenceIndex, setSentenceIndex] = useState(0);
+  const [holding, setHolding] = useState(false);
+  const [recordSeconds, setRecordSeconds] = useState(0);
+  const [scoring, setScoring] = useState(false);
+  const [scores, setScores] = useState<number[]>([]);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [confettiOpen, setConfettiOpen] = useState(false);
+  const recordButtonRef = useRef<HTMLButtonElement | null>(null);
+
+  const currentSentence = speakingSentences[sentenceIndex];
+  const averageScore = scores.length ? Math.round(scores.reduce((sum, score) => sum + score, 0) / scores.length) : 0;
+
+  useEffect(() => {
+    if (!holding) return;
+    setRecordSeconds(0);
+    const timer = window.setInterval(() => setRecordSeconds((seconds) => seconds + 1), 1000);
+    return () => window.clearInterval(timer);
+  }, [holding]);
+
+  function generatePlan() {
+    setGenerating(true);
+    window.setTimeout(() => {
+      setGenerating(false);
+      setStep("home");
+    }, 5000);
+  }
+
+  function finishRecording() {
+    if (!holding || scoring) return;
+    setHolding(false);
+    setScoring(true);
+    window.setTimeout(() => {
+      const score = sentenceIndex === 0 ? 91 : 88;
+      setScores((current) => [...current, score]);
+      setScoring(false);
+    }, 900);
+  }
+
+  function startRecording(event: PointerEvent<HTMLButtonElement>, disabled: boolean) {
+    if (disabled) return;
+    event.preventDefault();
+    recordButtonRef.current = event.currentTarget;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    setHolding(true);
+  }
+
+  function stopRecording(event: PointerEvent<HTMLButtonElement>) {
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    finishRecording();
+  }
+
+  function nextSentence() {
+    if (sentenceIndex + 1 < speakingSentences.length) {
+      setSentenceIndex((index) => index + 1);
+      return;
+    }
+    setStep("report");
+  }
+
+  if (step === "practice" && currentSentence) {
+    const lastScore = scores[sentenceIndex];
+    return (
+      <section className="task-screen speaking-module">
+        <TaskHeader title="口语练习" subtitle={`${material} · ${sentenceIndex + 1}/${speakingSentences.length}`} onBack={() => setStep("home")} />
+        <div className="speaking-sentence-card">
+          <span>{currentSentence.scene}</span>
+          <h2>{currentSentence.en}</h2>
+          <p>{currentSentence.cn}</p>
+          <small>{currentSentence.tip}</small>
+        </div>
+        <SpeakingWaveCanvas active={holding} />
+        <button
+          className={`speaking-hold-button ${holding ? "recording" : ""} ${scoring ? "scoring" : ""}`}
+          type="button"
+          onPointerDown={(event) => startRecording(event, Boolean(lastScore) || scoring)}
+          onPointerUp={stopRecording}
+          onPointerCancel={stopRecording}
+          disabled={Boolean(lastScore) || scoring}
+        >
+          <span className="speaking-mic-orb">
+            <Mic size={22} />
+          </span>
+          <span>
+            <strong>{scoring ? "AI 正在评分" : lastScore ? `本句得分 ${lastScore}` : holding ? "松开完成复述" : "长按复述"}</strong>
+            <small>{holding ? `00:${String(recordSeconds).padStart(2, "0")}` : "Hold to talk"}</small>
+          </span>
+        </button>
+        {lastScore && (
+          <div className="speaking-score-card">
+            <strong>{lastScore}</strong>
+            <span>发音清晰，语调自然度较好。</span>
+            <div>
+              <b>准确度 92</b>
+              <b>流利度 88</b>
+              <b>完整度 94</b>
+            </div>
+            <button type="button" onClick={nextSentence}>
+              {sentenceIndex + 1 >= speakingSentences.length ? "查看报告" : "下一句"}
+            </button>
+          </div>
+        )}
+      </section>
+    );
+  }
+
+  if (step === "report") {
+    return (
+      <section className="task-screen speaking-module">
+        <TaskHeader title="口语报告" subtitle="今日复述任务完成" onBack={() => setStep("home")} />
+        <section className="vocab-report-card">
+          <span className="tiny-label">SPEAKING REPORT</span>
+          <h2>{averageScore}</h2>
+          <p>今日任务名称 - Remix</p>
+        </section>
+        <div className="vocab-task-grid">
+          <Metric label="完成句子" value="2句" />
+          <Metric label="平均分" value={`${averageScore}`} />
+          <Metric label="连续学习" value="3天" />
+          <Metric label="获得积分" value="35" />
+        </div>
+        <button
+          className="learning-action-button complete"
+          type="button"
+          onClick={() => setShareOpen(true)}
+        >
+          <span className="vocab-complete-icon">
+            <Check size={18} />
+          </span>
+          <span>
+            <strong>完成本轮口语任务</strong>
+            <small>记录今日口语成绩和连续学习</small>
+          </span>
+          <ChevronRight size={18} />
+        </button>
+        {shareOpen && (
+          <SpeakingShareModal
+            score={averageScore}
+            onClose={() => setShareOpen(false)}
+            onShare={() => {
+              setConfettiOpen(true);
+              window.setTimeout(() => {
+                onDailyComplete(averageScore);
+                onBack();
+              }, 1200);
+            }}
+          />
+        )}
+        {confettiOpen && <CelebratingConfetti onDone={() => setConfettiOpen(false)} />}
+      </section>
+    );
+  }
+
+  if (step === "home") {
+    return (
+      <section className="task-screen speaking-module">
+        <TaskHeader title="口语学习" subtitle={`${goal} · ${scenario}`} onBack={onBack} />
+        <section className="vocab-hero-panel">
+          <div>
+            <span className="tiny-label">TODAY SPEAKING</span>
+            <h2>今日口语任务</h2>
+            <p>先听原音，再长按复述，松开后由 AI 评分，并按句推进。</p>
+          </div>
+          <div className="vocab-hero-orb">
+            <Mic size={24} />
+            <span>2 句</span>
+          </div>
+        </section>
+        <div className="speaking-bento">
+          <div className="wide">
+            <span>今日原句</span>
+            <strong>2 句</strong>
+            <small>短句复述</small>
+          </div>
+          <div>
+            <span>预计</span>
+            <strong>6 分钟</strong>
+          </div>
+          <div>
+            <span>偏好</span>
+            <strong>{preference}</strong>
+          </div>
+          <div className="wide material">
+            <span>材料</span>
+            <strong>{material}</strong>
+          </div>
+        </div>
+        <section className="vocab-ai-advice">
+          <Sparkles size={17} />
+          <span>今日任务将按「听原句 → 长按复述 → AI 打分 → 下一句」推进。完成 2 句后生成口语报告。</span>
+        </section>
+        <section className="vocab-plan-detail">
+          <span>今日原句：2 句</span>
+          <span>评分维度：准确度 / 流利度 / 完整度</span>
+          <span>练习方式：长按复述</span>
+          <span>完成奖励：35 分</span>
+        </section>
+        <button className="learning-action-button primary" type="button" onClick={() => setStep("practice")}>
+          <Sparkles size={18} />
+          <span>
+            <strong>开始口语练习</strong>
+            <small>原音 → 复述 → AI 打分 → 下一句</small>
+          </span>
+          <ChevronRight size={18} />
+        </button>
+      </section>
+    );
+  }
+
+  const setupOptions: Record<Exclude<SpeakingStep, "home" | "practice" | "report">, { title: string; desc: string; options: string[]; onPick?: (value: string) => void }> = {
+    goal: { title: "你为什么练口语？", desc: "目标会决定材料、场景和评分重点。", options: ["中考口语", "雅思口语", "日常表达", "商务沟通"], onPick: (value) => { setGoal(value); setStep("scenario"); } },
+    scenario: { title: "你主要在哪些场景使用？", desc: "场景会承载复述内容和表达用途。", options: ["校园表达", "生活问路", "考试回答", "课堂讨论"], onPick: (value) => { setScenario(value); setStep("material"); } },
+    material: { title: "选择你的口语素材", desc: "Demo 阶段使用 2 句短句作为练习材料。", options: ["A Day at School", "Daily Directions", "IELTS Part 1"], onPick: (value) => { setMaterial(value); setStep("preference"); } },
+    preference: { title: "设置你的练习偏好", desc: "系统会根据偏好调整评分反馈重点。", options: ["发音优先", "流利度优先", "完整度优先", "语调优先"], onPick: (value) => { setPreference(value); setStep("plan"); } },
+    plan: { title: "确认口语学习计划", desc: "确认后生成今日 2 句复述任务。", options: [] }
+  };
+  const current = setupOptions[step as Exclude<SpeakingStep, "home" | "practice" | "report">];
+
+  return (
+    <section className="task-screen speaking-module">
+      {generating && <SpeakingGeneratingOverlay />}
+      <TaskHeader title="口语学习" subtitle="初始化练习计划" onBack={onBack} />
+      <SpeakingSetupSteps current={step} />
+      <div className="vocab-step-content">
+        <SetupPanel title={current.title} desc={current.desc}>
+          {step === "plan" ? (
+            <>
+              <div className="vocab-plan-detail">
+                <span>目标：{goal}</span>
+                <span>场景：{scenario}</span>
+                <span>素材：{material}</span>
+                <span>偏好：{preference}</span>
+                <span>今日练习：2 句</span>
+                <span>评分：AI 自动打分</span>
+              </div>
+              <button className="vocab-generate-plan" type="button" onClick={generatePlan} disabled={generating}>
+                <span className="vocab-generate-icon"><Sparkles size={18} /></span>
+                <span><strong>确认生成口语计划</strong><small>生成今日复述任务</small></span>
+                <ChevronRight size={18} />
+              </button>
+            </>
+          ) : (
+            <div className="vocab-card-list">
+              {current.options.map((option) => (
+                <button key={option} type="button" onClick={() => current.onPick?.(option)}>
+                  <strong>{option}</strong>
+                  <span>适合当前口语训练目标</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </SetupPanel>
+      </div>
+    </section>
+  );
+}
+
+function SpeakingShareModal({ score, onClose, onShare }: { score: number; onClose: () => void; onShare: () => void }) {
+  const [closing, setClosing] = useState(false);
+  const [sharing, setSharing] = useState(false);
+
+  function share() {
+    if (sharing) return;
+    setSharing(true);
+    onShare();
+    window.setTimeout(() => setClosing(true), 950);
+    window.setTimeout(onClose, 1250);
+  }
+
+  return (
+    <div className={`vocab-share-overlay ${closing ? "closing" : ""}`} role="dialog" aria-modal="true" aria-label="口语成就分享卡">
+      <section className="vocab-achievement-card speaking-share-card">
+        <button className="vocab-share-close" type="button" aria-label="关闭分享卡片" onClick={onClose}>
+          <X size={17} />
+        </button>
+        <div className="vocab-achievement-badge">
+          <Sparkles size={20} />
+          <span>口语完成</span>
+        </div>
+        <div className="vocab-achievement-title">
+          <span>今日口语成就</span>
+          <h2>我完成了英语口语复述</h2>
+          <p>2 句复述完成，表达更进一步</p>
+        </div>
+        <div className="vocab-achievement-score">
+          <strong>{score}</strong>
+          <span>平均分</span>
+        </div>
+        <div className="vocab-achievement-stats">
+          <span><b>2</b>复述句子</span>
+          <span><b>3</b>连续学习</span>
+          <span><b>35</b>获得积分</span>
+          <span><b>AI</b>评分完成</span>
+        </div>
+        <div className="vocab-achievement-footer">
+          <small>Lv.2 稳定练习者</small>
+          <button type="button" onClick={share} disabled={sharing}>
+            {sharing ? "分享中" : "分享成就"}
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function SpeakingWaveCanvas({ active }: { active: boolean }) {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const context = canvas.getContext("2d");
+    if (!context) return;
+    const targetCanvas = canvas;
+    const ctx = context;
+    let frame = 0;
+    let animation = 0;
+
+    function resize() {
+      const ratio = window.devicePixelRatio || 1;
+      const rect = targetCanvas.getBoundingClientRect();
+      targetCanvas.width = Math.max(1, Math.floor(rect.width * ratio));
+      targetCanvas.height = Math.max(1, Math.floor(rect.height * ratio));
+      ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+    }
+
+    function draw() {
+      const rect = targetCanvas.getBoundingClientRect();
+      ctx.clearRect(0, 0, rect.width, rect.height);
+      const gradient = ctx.createLinearGradient(0, 0, rect.width, 0);
+      gradient.addColorStop(0, "rgba(45, 212, 191, 0)");
+      gradient.addColorStop(0.5, active ? "rgba(139, 92, 246, 0.78)" : "rgba(148, 163, 184, 0.22)");
+      gradient.addColorStop(1, "rgba(251, 191, 36, 0)");
+      const center = rect.height / 2;
+      const waves = [
+        { speed: 0.042, amp: active ? 24 : 10, wave: 26 },
+        { speed: 0.028, amp: active ? 11 : 5, wave: 34 },
+        { speed: 0.052, amp: active ? 31 : 12, wave: 42 },
+        { speed: 0.018, amp: active ? -18 : -7, wave: 58 }
+      ];
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = gradient;
+      waves.forEach((wave) => {
+        ctx.beginPath();
+        for (let x = 0; x <= rect.width; x += 3) {
+          const envelope = Math.sin((x / rect.width) * Math.PI);
+          const y = center + Math.sin(x / wave.wave + frame * wave.speed) * wave.amp * envelope;
+          if (x === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+      });
+      if (active) {
+        frame += 1;
+        animation = window.requestAnimationFrame(draw);
+      }
+    }
+
+    resize();
+    draw();
+    window.addEventListener("resize", resize);
+    if (active) animation = window.requestAnimationFrame(draw);
+    return () => {
+      window.removeEventListener("resize", resize);
+      window.cancelAnimationFrame(animation);
+    };
+  }, [active]);
+
+  return (
+    <div className={`speaking-wave-canvas ${active ? "active" : ""}`} aria-hidden="true">
+      <canvas ref={canvasRef} />
+      <span>{active ? "Recording..." : "Press and hold to record"}</span>
+    </div>
+  );
+}
+
+function SpeakingGeneratingOverlay() {
+  return (
+    <div className="vocab-loading-overlay speaking-plan-loading" role="status" aria-live="polite">
+      <div className="vocab-loading-card">
+        <div className="loader-holder" aria-hidden="true">
+          <div className="blob-big" />
+          <div className="blob-1" />
+          <div className="blob-2" />
+          <div className="blob-3" />
+          <div className="blob-4" />
+          <div className="blob-5" />
+        </div>
+        <strong>正在生成口语计划</strong>
+        <span>系统正在安排今日原句、复述顺序和 AI 评分维度</span>
+      </div>
+      <svg className="vocab-goo-filter" xmlns="http://www.w3.org/2000/svg" version="1.1" aria-hidden="true">
+        <defs>
+          <filter id="vocab-goo">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur" />
+            <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7" result="goo" />
+            <feBlend in="SourceGraphic" in2="goo" />
+          </filter>
+        </defs>
+      </svg>
+    </div>
+  );
+}
+
+function SpeakingSetupSteps({ current }: { current: SpeakingStep }) {
+  const steps = ["goal", "scenario", "material", "preference", "plan"] as const;
+  const labels = ["目标", "场景", "素材", "偏好", "计划"];
+  const currentIndex = Math.max(0, steps.findIndex((step) => step === current));
+  return (
+    <div className="vocab-setup-steps" style={{ "--step-progress": `${(currentIndex / 4) * 100}%`, "--step-progress-from": "0%" } as CSSProperties & Record<"--step-progress" | "--step-progress-from", string>}>
+      {steps.map((step, index) => (
+        <span className={index < currentIndex ? "done" : index === currentIndex ? "active" : ""} key={step}>
+          <i>{index + 1}</i>
+          {labels[index]}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function SetupPanel({ title, desc, children }: { title: string; desc: string; children: ReactNode }) {
+  return (
+    <section className="vocab-setup-section">
+      <div className="vocab-setup-title">
+        <span><Mic size={18} /></span>
+        <div><strong>{title}</strong><small>{desc}</small></div>
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function Metric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="vocab-metric blue">
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
   );
 }
 

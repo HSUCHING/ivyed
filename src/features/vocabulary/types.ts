@@ -16,6 +16,8 @@ export interface VocabularyProfile {
   userId: string;
   goal: VocabularyGoal;
   level: VocabularyLevel;
+  planDurationDays: 30 | 60 | 90;
+  dailyStudyMinutes: 10 | 20 | 30;
   dailyNewWords: number;
   dailyReviewLimit: number;
   preferences: LearningPreference[];
@@ -107,6 +109,10 @@ export interface StudyPlan {
   goal: VocabularyGoal;
   scenarioId: string;
   bookId: string;
+  level: VocabularyLevel;
+  planDurationDays: number;
+  dailyStudyMinutes: number;
+  practicePreference: LearningPreference;
   dailyNewItems: number;
   dailyReviewLimit: number;
   testCycle: "weekly" | "per_100_items" | "book_unit";
@@ -224,6 +230,13 @@ export interface LearningReport {
   weakQuestionTypes: QuestionType[];
   weakItems: string[];
   suggestion: string;
+  studentName: string;
+  streakDays: number;
+  pointsEarned: number;
+  totalPoints: number;
+  levelName: string;
+  badgeName: string;
+  adjustmentAdvice: string;
   createdAt: string;
   // Compatibility aliases.
   date: string;

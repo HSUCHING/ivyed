@@ -5,39 +5,57 @@ const now = "2026-05-10T08:00:00.000Z";
 export const mockScenarios: LearningScenario[] = [
   {
     id: "scenario_exam_core",
-    name: "考试备考场景",
+    name: "考试高频",
     type: "exam",
-    description: "围绕中高频考试词、识别速度、拼写准确率和语境判断组织任务。",
+    description: "优先学习考试中最常见、最容易反复出现的核心词。",
     targetGoals: ["cet4", "cet6", "postgraduate", "ielts", "toefl"],
     recommendedSourceTypes: ["exam_book", "official_book", "ai_generated"],
     tags: ["考试", "高频", "拼写"]
   },
   {
+    id: "scenario_academic_reading",
+    name: "学术阅读",
+    type: "academic",
+    description: "适合阅读论文、教材、学术文章和长篇阅读材料。",
+    targetGoals: ["ielts", "toefl", "postgraduate", "reading"],
+    recommendedSourceTypes: ["official_book", "exam_book", "content_words"],
+    tags: ["论文", "教材", "长篇阅读"]
+  },
+  {
     id: "scenario_daily_speaking",
-    name: "日常口语场景",
+    name: "生活交流",
     type: "daily",
-    description: "把词汇绑定到日常表达、口语例句和可复述场景里。",
-    targetGoals: ["daily", "course"],
+    description: "适合日常表达、旅行、社交和基础沟通。",
+    targetGoals: ["daily", "course", "custom"],
     recommendedSourceTypes: ["course_words", "content_words", "ai_generated"],
     tags: ["口语", "例句", "复述"]
   },
   {
-    id: "scenario_reading_boost",
-    name: "阅读提升场景",
+    id: "scenario_media_listening",
+    name: "影视听力",
     type: "reading",
-    description: "优先学习文章、课程和笔记中反复出现的阅读生词。",
-    targetGoals: ["reading", "course", "ielts", "toefl"],
+    description: "适合看剧、听播客、看视频时理解常见表达。",
+    targetGoals: ["daily", "reading", "course", "custom"],
     recommendedSourceTypes: ["content_words", "note_words", "official_book"],
-    tags: ["阅读", "语境", "长难句"]
+    tags: ["影视", "播客", "视频"]
   },
   {
     id: "scenario_business",
-    name: "商务沟通场景",
+    name: "商务沟通",
     type: "business",
-    description: "偏向会议、邮件、项目沟通和商务表达中的高频词。",
+    description: "适合邮件、会议、汇报、谈判和职场表达。",
     targetGoals: ["business"],
     recommendedSourceTypes: ["official_book", "custom_book", "ai_generated"],
     tags: ["商务", "邮件", "表达"]
+  },
+  {
+    id: "scenario_custom",
+    name: "自定义场景",
+    type: "custom",
+    description: "根据自己的学习材料或目标创建专属场景。",
+    targetGoals: ["custom"],
+    recommendedSourceTypes: ["custom_book", "imported", "ai_generated"],
+    tags: ["自定义", "导入", "专属"]
   }
 ];
 
@@ -45,16 +63,24 @@ export const mockMaterialSources: MaterialSource[] = [
   {
     id: "source_exam_book",
     type: "exam_book",
-    name: "考试核心词库",
+    name: "系统核心词库",
     description: "覆盖考试高频词、同义替换和写作常用表达。",
+    createdBy: "system",
+    createdAt: now
+  },
+  {
+    id: "source_official_book",
+    type: "official_book",
+    name: "官方考试词库",
+    description: "覆盖 IELTS、TOEFL、四六级和考研的官方高频词。",
     createdBy: "system",
     createdAt: now
   },
   {
     id: "source_course_words",
     type: "course_words",
-    name: "主程序课程生词",
-    description: "来自课程学习和阅读材料中的生词集合。",
+    name: "课程与材料生词",
+    description: "来自课程学习、阅读材料和笔记中的生词集合。",
     sourceRefId: "course_middle_school_core",
     createdBy: "system",
     createdAt: now
@@ -257,8 +283,8 @@ export const mockWords: Word[] = [
 export const mockWordBooks: WordBook[] = [
   {
     id: "book_exam_core_1200",
-    name: "考试核心词 1200",
-    description: "适合考试备考的高频词库，包含识别、反向回忆和拼写训练。",
+    name: "雅思核心词库",
+    description: "覆盖 IELTS 阅读、听力、写作中常见高频词。",
     category: "exam",
     scenarioId: "scenario_exam_core",
     sourceId: "source_exam_book",
@@ -269,14 +295,53 @@ export const mockWordBooks: WordBook[] = [
     createdAt: now
   },
   {
-    id: "book_course_words",
-    name: "课程生词本",
-    description: "来自主程序课程和文章的生词，适合课程学习后快速复盘。",
-    category: "content",
-    scenarioId: "scenario_reading_boost",
-    sourceId: "source_course_words",
+    id: "book_toefl_core",
+    name: "托福核心词库",
+    description: "覆盖 TOEFL 学术讲座、阅读和校园对话中的高频词。",
+    category: "exam",
+    scenarioId: "scenario_academic_reading",
+    sourceId: "source_official_book",
     totalItems: 4,
     itemIds: ["word_fluency", "word_accuracy", "word_policy", "word_evidence"],
+    difficulty: "medium",
+    createdBy: "system",
+    createdAt: now
+  },
+  {
+    id: "book_cet_core",
+    name: "四六级核心词库",
+    description: "覆盖大学英语四六级高频核心词。",
+    category: "exam",
+    scenarioId: "scenario_exam_core",
+    sourceId: "source_exam_book",
+    totalItems: 5,
+    itemIds: ["word_achieve", "word_efficient", "word_policy", "word_evidence", "word_consistent"],
+    difficulty: "medium",
+    createdBy: "system",
+    createdAt: now
+  },
+  {
+    id: "book_postgraduate_core",
+    name: "考研核心词库",
+    description: "覆盖考研阅读、翻译和写作中常见重点词。",
+    category: "exam",
+    scenarioId: "scenario_exam_core",
+    sourceId: "source_exam_book",
+    totalItems: 5,
+    itemIds: ["word_evidence", "word_strategy", "word_policy", "word_efficient", "word_consistent"],
+    difficulty: "hard",
+    createdBy: "system",
+    createdAt: now
+  },
+  {
+    id: "book_business_core",
+    name: "商务高频词库",
+    description: "覆盖邮件、会议、汇报、谈判中的高频商务表达。",
+    category: "official",
+    scenarioId: "scenario_business",
+    sourceId: "source_ai_generated",
+    totalItems: 4,
+    itemIds: ["word_strategy", "word_efficient", "word_consistent", "word_achieve"],
     difficulty: "medium",
     createdBy: "system",
     createdAt: now
@@ -287,8 +352,10 @@ export const mockVocabularyProfile: VocabularyProfile = {
   userId: "usr_student_001",
   goal: "ielts",
   level: "intermediate",
+  planDurationDays: 60,
+  dailyStudyMinutes: 20,
   dailyNewWords: 6,
-  dailyReviewLimit: 8,
+  dailyReviewLimit: 4,
   preferences: ["spelling", "example", "exam"],
   currentScenarioId: "scenario_exam_core",
   currentBookId: "book_exam_core_1200",
@@ -304,8 +371,12 @@ export const mockStudyPlan: StudyPlan = {
   goal: "ielts",
   scenarioId: "scenario_exam_core",
   bookId: "book_exam_core_1200",
+  level: "intermediate",
+  planDurationDays: 60,
+  dailyStudyMinutes: 20,
+  practicePreference: "spelling",
   dailyNewItems: 6,
-  dailyReviewLimit: 8,
+  dailyReviewLimit: 4,
   testCycle: "weekly",
   estimatedFinishDate: "2026-07-08",
   status: "active",

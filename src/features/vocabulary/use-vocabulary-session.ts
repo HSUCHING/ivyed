@@ -36,13 +36,14 @@ import type {
   WrongWordRecord
 } from "./types";
 
-export type VocabularyView = "entry" | "onboarding" | "scenario" | "books" | "plan" | "home" | "learn" | "practice" | "feedback" | "wrong" | "review" | "test" | "report" | "settings";
+export type VocabularyView = "entry" | "onboarding" | "scenario" | "books" | "preferences" | "plan" | "home" | "learn" | "practice" | "feedback" | "wrong" | "review" | "test" | "report" | "settings";
 type PracticeMode = "new" | "wrong" | "review" | "test";
 
 export function useVocabularySession(userId: string, initialView?: VocabularyView) {
   const startingProfile = userId === mockVocabularyProfile.userId && mockVocabularyProfile.initialized ? mockVocabularyProfile : null;
+  const setupViews: VocabularyView[] = ["entry", "onboarding", "scenario", "books", "preferences", "plan"];
   const startingView: VocabularyView =
-    initialView && (startingProfile?.initialized || ["entry", "onboarding", "scenario", "books"].includes(initialView))
+    initialView && (startingProfile?.initialized || setupViews.includes(initialView))
       ? initialView
       : startingProfile?.initialized
         ? "home"
@@ -77,6 +78,8 @@ export function useVocabularySession(userId: string, initialView?: VocabularyVie
   const [draftLevel, setDraftLevel] = useState<VocabularyLevel>(profile?.level ?? "intermediate");
   const [draftPreferences, setDraftPreferences] = useState<LearningPreference[]>(profile?.preferences ?? ["spelling", "example", "exam"]);
   const [draftIntensity, setDraftIntensity] = useState<"light" | "normal" | "heavy">("normal");
+  const [draftDurationDays, setDraftDurationDays] = useState<30 | 60 | 90>(profile?.planDurationDays ?? 60);
+  const [draftDailyMinutes, setDraftDailyMinutes] = useState<10 | 20 | 30>(profile?.dailyStudyMinutes ?? 20);
   const [selectedScenarioId, setSelectedScenarioId] = useState(profile?.currentScenarioId ?? mockScenarios[0]!.id);
   const [selectedSourceId, setSelectedSourceId] = useState(mockMaterialSources[0]!.id);
   const [selectedBookId, setSelectedBookId] = useState(profile?.currentBookId ?? mockWordBooks[0]!.id);
@@ -87,6 +90,7 @@ export function useVocabularySession(userId: string, initialView?: VocabularyVie
   const currentSource = mockMaterialSources.find((source) => source.id === selectedSourceId) ?? mockMaterialSources[0]!;
   const currentBook = mockWordBooks.find((book) => book.id === selectedBookId) ?? mockWordBooks[0]!;
   const currentLearnWord = findWords(learnIds)[learnIndex];
+  const learnStackWords = findWords(learnIds.slice(learnIndex, learnIndex + 4));
   const currentQuestion = questions[questionIndex];
   const progress = questions.length ? Math.round(((questionIndex + (feedback ? 1 : 0)) / questions.length) * 100) : 0;
   const recommendedScenarios = recommendScenarios(draftGoal, mockScenarios);
@@ -109,19 +113,22 @@ export function useVocabularySession(userId: string, initialView?: VocabularyVie
     return nextTask;
   }
 
-  function completeOnboarding() {
-    const scenario = recommendedScenarios[0] ?? mockScenarios[0]!;
+  function completeOnboarding(goalOverride = draftGoal) {
+    const scenariosForGoal = recommendScenarios(goalOverride, mockScenarios);
+    const scenario = scenariosForGoal[0] ?? mockScenarios[0]!;
     const source = selectMaterialSource(scenario, mockMaterialSources);
     const draftProfile = initializeVocabularyProfile({
       userId,
-      goal: draftGoal,
+      goal: goalOverride,
       level: draftLevel,
-      intensity: draftIntensity,
+      planDurationDays: draftDurationDays,
+      dailyStudyMinutes: draftDailyMinutes,
       preferences: draftPreferences,
       scenarioId: scenario.id,
       initialized: false
     });
-    const recommendedBook = generateOrSelectWordBook({ goal: draftGoal, scenario, source, books: mockWordBooks });
+    const recommendedBook = generateOrSelectWordBook({ goal: goalOverride, scenario, source, books: mockWordBooks });
+    setDraftGoal(goalOverride);
     setProfile(draftProfile);
     setSelectedScenarioId(scenario.id);
     setSelectedSourceId(source.id);
@@ -130,16 +137,17 @@ export function useVocabularySession(userId: string, initialView?: VocabularyVie
     setView("scenario");
   }
 
-  function confirmScenario() {
-    const scenario = mockScenarios.find((item) => item.id === selectedScenarioId) ?? mockScenarios[0]!;
+  function confirmScenario(scenarioIdOverride = selectedScenarioId) {
+    const scenario = mockScenarios.find((item) => item.id === scenarioIdOverride) ?? mockScenarios[0]!;
     const source = mockMaterialSources.find((item) => item.id === selectedSourceId) ?? selectMaterialSource(scenario, mockMaterialSources);
     const book = generateOrSelectWordBook({ goal: profile?.goal ?? draftGoal, scenario, source, books: mockWordBooks });
+    setSelectedScenarioId(scenario.id);
     setSelectedBookId(book.id);
     setView("books");
   }
 
-  function confirmBook() {
-    const book = mockWordBooks.find((item) => item.id === selectedBookId) ?? mockWordBooks[0]!;
+  function confirmBook(bookIdOverride = selectedBookId) {
+    const book = mockWordBooks.find((item) => item.id === bookIdOverride) ?? mockWordBooks[0]!;
     const profileForPlan =
       profile ??
       initializeVocabularyProfile({
@@ -160,10 +168,58 @@ export function useVocabularySession(userId: string, initialView?: VocabularyVie
       scenarioId: selectedScenarioId,
       book
     });
+    setSelectedBookId(book.id);
     setPlan(nextPlan);
     setPendingPlan(nextPlan);
     setProfile({
       ...profileForPlan,
+      currentScenarioId: selectedScenarioId,
+      currentBookId: book.id,
+      currentPlanId: nextPlan.id,
+      initialized: false,
+      updatedAt: nextPlan.updatedAt
+    });
+    setView("preferences");
+  }
+
+  function confirmPreferences(preferenceOverride?: LearningPreference) {
+    const book = mockWordBooks.find((item) => item.id === selectedBookId) ?? mockWordBooks[0]!;
+    const preferences = preferenceOverride ? [preferenceOverride] : draftPreferences;
+    const profileForPlan =
+      profile ??
+      initializeVocabularyProfile({
+        userId,
+        goal: draftGoal,
+        level: draftLevel,
+        planDurationDays: draftDurationDays,
+        dailyStudyMinutes: draftDailyMinutes,
+        preferences,
+        scenarioId: selectedScenarioId,
+        bookId: book.id,
+        initialized: false
+      });
+    const profileWithPreferences = {
+      ...profileForPlan,
+      level: draftLevel,
+      planDurationDays: draftDurationDays,
+      dailyStudyMinutes: draftDailyMinutes,
+      dailyNewWords: Math.max(6, Math.round(draftDailyMinutes * (draftLevel === "starter" ? 0.6 : draftLevel === "advanced" ? 0.95 : 0.8))),
+      dailyReviewLimit: 4,
+      preferences
+    };
+    const nextPlan = createStudyPlan({
+      userId,
+      goal: profileWithPreferences.goal,
+      level: profileWithPreferences.level,
+      profile: profileWithPreferences,
+      scenarioId: selectedScenarioId,
+      book
+    });
+    setPlan(nextPlan);
+    setPendingPlan(nextPlan);
+    setDraftPreferences(preferences);
+    setProfile({
+      ...profileWithPreferences,
       currentScenarioId: selectedScenarioId,
       currentBookId: book.id,
       currentPlanId: nextPlan.id,
@@ -197,7 +253,8 @@ export function useVocabularySession(userId: string, initialView?: VocabularyVie
             userId,
             goal: draftGoal,
             level: draftLevel,
-            intensity: draftIntensity,
+            planDurationDays: draftDurationDays,
+            dailyStudyMinutes: draftDailyMinutes,
             preferences: draftPreferences,
             scenarioId: selectedScenarioId,
             bookId: book.id,
@@ -212,14 +269,19 @@ export function useVocabularySession(userId: string, initialView?: VocabularyVie
   function startTodayLearning() {
     const nextTask = refreshTask();
     setTask({ ...nextTask, status: "learning" });
-    setLearnIds(nextTask.newItemIds);
-    setLearnIndex(0);
     setFeedback(null);
+    setRecords([]);
+    if (nextTask.reviewItemIds.length) {
+      startQuestionSet(nextTask.reviewItemIds, "review");
+      return;
+    }
     if (nextTask.newItemIds.length) {
+      setLearnIds(nextTask.newItemIds);
+      setLearnIndex(0);
       setView("learn");
       return;
     }
-    startQuestionSet([...nextTask.wrongItemIds, ...nextTask.reviewItemIds], "review");
+    startQuestionSet(nextTask.wrongItemIds, "wrong");
   }
 
   function markStudyChoice(choice: StudyChoice) {
@@ -227,6 +289,12 @@ export function useVocabularySession(userId: string, initialView?: VocabularyVie
     if (!word) return;
     const nextState = updateItemStateAfterStudy(stateMap.get(word.id), userId, word.id, choice, plan.bookId);
     const nextStates = upsertState(states, nextState);
+    let nextWrongWords = wrongWords;
+    if (choice === "fuzzy" || choice === "unknown") {
+      const nextWrong = addWrongItemRecord(wrongMap.get(word.id), userId, word.id, choice === "fuzzy" ? "meaning_confusion" : "unknown", nextState.masteryScore);
+      nextWrongWords = upsertWrong(wrongWords, nextWrong);
+      setWrongWords(nextWrongWords);
+    }
     setStates(nextStates);
 
     if (learnIndex + 1 < learnIds.length) {
@@ -239,9 +307,9 @@ export function useVocabularySession(userId: string, initialView?: VocabularyVie
   }
 
   function startQuestionSet(itemIds: string[], mode: PracticeMode, nextStates = states) {
-    const selectedWords = findWords(itemIds);
+    const selectedWords = findWords(itemIds).slice(0, 4);
     setPracticeMode(mode);
-    setQuestions(mode === "test" ? generateStageTest(mockWords, nextStates, wrongWords) : generatePracticeQuestions(selectedWords, mockWords));
+    setQuestions(mode === "test" ? generateStageTest(mockWords, nextStates, wrongWords).slice(0, 4) : generatePracticeQuestions(selectedWords, mockWords).slice(0, 4));
     setQuestionIndex(0);
     setFeedback(null);
     setStates(nextStates);
@@ -286,14 +354,30 @@ export function useVocabularySession(userId: string, initialView?: VocabularyVie
     if (practiceMode === "test") {
       setStageResult(evaluateStageTest(records, states));
     }
-    const nextReport = generateLearningReport({ userId, task: { ...task, status: "completed" }, records, states, wrongWords });
-    setTask((current) => ({ ...current, status: "completed" }));
+    if (practiceMode === "review" && task.newItemIds.length) {
+      setLearnIds(task.newItemIds);
+      setLearnIndex(0);
+      setFeedback(null);
+      setView("learn");
+      return;
+    }
+    if (practiceMode !== "wrong") {
+      const activeWrongIds = wrongWords.filter((record) => !record.resolved).map((record) => record.itemId);
+      if (activeWrongIds.length) {
+        startQuestionSet(activeWrongIds, "wrong");
+        return;
+      }
+    }
+
+    const completedTask = { ...task, status: "completed" as const };
+    const nextReport = generateLearningReport({ userId, task: completedTask, records, states, wrongWords });
+    setTask(completedTask);
     setReport(nextReport);
     setView(practiceMode === "test" ? "test" : "report");
   }
 
   function startReview() {
-    startQuestionSet([...task.wrongItemIds, ...task.reviewItemIds], "review");
+    startQuestionSet(task.reviewItemIds, "review");
   }
 
   function startWrongPractice() {
@@ -362,6 +446,7 @@ export function useVocabularySession(userId: string, initialView?: VocabularyVie
     currentSource,
     currentBook,
     currentLearnWord,
+    learnStackWords,
     currentQuestion,
     learnIndex,
     learnTotal: learnIds.length,
@@ -380,6 +465,10 @@ export function useVocabularySession(userId: string, initialView?: VocabularyVie
     setDraftPreferences,
     draftIntensity,
     setDraftIntensity,
+    draftDurationDays,
+    setDraftDurationDays,
+    draftDailyMinutes,
+    setDraftDailyMinutes,
     recommendedScenarios,
     selectedScenarioId,
     setSelectedScenarioId,
@@ -392,6 +481,7 @@ export function useVocabularySession(userId: string, initialView?: VocabularyVie
     completeOnboarding,
     confirmScenario,
     confirmBook,
+    confirmPreferences,
     confirmPlan,
     startTodayLearning,
     markStudyChoice,

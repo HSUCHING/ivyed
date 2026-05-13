@@ -59,7 +59,9 @@ export function initializeVocabularyProfile(input: {
   userId: string;
   goal: VocabularyGoal;
   level: VocabularyLevel;
-  intensity: "light" | "normal" | "heavy";
+  planDurationDays?: 30 | 60 | 90;
+  dailyStudyMinutes?: 10 | 20 | 30;
+  intensity?: "light" | "normal" | "heavy";
   preferences: LearningPreference[];
   scenarioId?: string;
   bookId?: string;
@@ -67,14 +69,18 @@ export function initializeVocabularyProfile(input: {
   initialized?: boolean;
   now?: Date;
 }): VocabularyProfile {
-  const dailyNewWords = input.intensity === "heavy" ? 18 : input.intensity === "normal" ? 12 : 6;
+  const planDurationDays = input.planDurationDays ?? (input.intensity === "heavy" ? 30 : input.intensity === "light" ? 90 : 60);
+  const dailyStudyMinutes = input.dailyStudyMinutes ?? (input.intensity === "heavy" ? 30 : input.intensity === "light" ? 10 : 20);
+  const dailyNewWords = Math.max(6, Math.round(dailyStudyMinutes * (input.level === "starter" ? 0.6 : input.level === "advanced" ? 0.95 : 0.8)));
   const timestamp = (input.now ?? new Date()).toISOString();
   return {
     userId: input.userId,
     goal: input.goal,
     level: input.level,
+    planDurationDays,
+    dailyStudyMinutes,
     dailyNewWords,
-    dailyReviewLimit: Math.max(8, Math.round(dailyNewWords * 1.5)),
+    dailyReviewLimit: 4,
     preferences: input.preferences,
     currentScenarioId: input.scenarioId ?? "",
     currentBookId: input.bookId ?? "",
@@ -115,13 +121,13 @@ export function createStudyPlan(input: {
   userId: string;
   goal: VocabularyGoal;
   level: VocabularyLevel;
-  profile: Pick<VocabularyProfile, "dailyNewWords" | "dailyReviewLimit">;
+  profile: Pick<VocabularyProfile, "dailyNewWords" | "dailyReviewLimit"> & Partial<Pick<VocabularyProfile, "planDurationDays" | "dailyStudyMinutes" | "preferences">>;
   scenarioId: string;
   book: WordBook;
   now?: Date;
 }): StudyPlan {
   const now = input.now ?? new Date();
-  const days = Math.ceil(input.book.totalItems / Math.max(1, input.profile.dailyNewWords));
+  const days = input.profile.planDurationDays ?? Math.ceil(input.book.totalItems / Math.max(1, input.profile.dailyNewWords));
   const estimated = new Date(now);
   estimated.setDate(estimated.getDate() + days);
   return {
@@ -130,6 +136,10 @@ export function createStudyPlan(input: {
     goal: input.goal,
     scenarioId: input.scenarioId,
     bookId: input.book.id,
+    level: input.level,
+    planDurationDays: days,
+    dailyStudyMinutes: input.profile.dailyStudyMinutes ?? 20,
+    practicePreference: input.profile.preferences?.[0] ?? "memory",
     dailyNewItems: input.profile.dailyNewWords,
     dailyReviewLimit: input.profile.dailyReviewLimit,
     testCycle: input.level === "advanced" ? "per_100_items" : "weekly",
@@ -151,18 +161,18 @@ export function generateTodayTask({ userId, words, states, wrongWords, plan, sce
   const todayEnd = new Date(now);
   todayEnd.setHours(23, 59, 59, 999);
   const dailyNewLimit = plan?.dailyNewItems ?? 6;
-  const dailyReviewLimit = plan?.dailyReviewLimit ?? 8;
+  const dailyReviewLimit = Math.min(plan?.dailyReviewLimit ?? 4, 4);
 
   const wrongItemIds = wrongWords
     .filter((record) => record.userId === userId && !record.resolved)
     .sort((a, b) => b.wrongCount - a.wrongCount)
-    .slice(0, Math.min(4, dailyReviewLimit))
+    .slice(0, Math.min(2, dailyReviewLimit))
     .map((record) => record.itemId);
 
   const forgettingItemIds = states
     .filter((state) => state.userId === userId && !wrongItemIds.includes(state.itemId) && state.status === "weak")
     .sort((a, b) => a.masteryScore - b.masteryScore)
-    .slice(0, 2)
+    .slice(0, 1)
     .map((state) => state.itemId);
 
   const dueReviewItemIds = states
@@ -181,7 +191,7 @@ export function generateTodayTask({ userId, words, states, wrongWords, plan, sce
       const state = stateMap.get(word.id);
       return !reserved.has(word.id) && (!state || state.status === "new");
     })
-    .slice(0, Math.max(2, dailyNewLimit - wrongItemIds.length))
+    .slice(0, dailyNewLimit)
     .map((word) => word.id);
 
   const masteredProbe = states
@@ -224,7 +234,7 @@ export function updateItemStateAfterStudy(state: UserWordState | undefined, user
   const config = {
     known: { status: "familiar" as const, delta: 18 },
     fuzzy: { status: "weak" as const, delta: 6 },
-    unknown: { status: "learning" as const, delta: -4 }
+    unknown: { status: "wrong" as const, delta: -8 }
   }[choice];
 
   return {
@@ -239,8 +249,22 @@ export function updateItemStateAfterStudy(state: UserWordState | undefined, user
 export const updateWordStateAfterStudy = updateItemStateAfterStudy;
 
 export function generatePracticeQuestions(items: Word[], allItems: Word[]): PracticeQuestion[] {
-  return items.flatMap((item, index) => [
-    {
+  return items.map((item, index) => {
+    const useReverseRecall = index % 2 === 1;
+    if (useReverseRecall) {
+      return {
+        id: `q_${item.id}_recognition_${index}`,
+        itemId: item.id,
+        wordId: item.id,
+        questionType: "select_word",
+        prompt: item.meaningCn,
+        options: buildOptions(item.word, allItems.map((candidate) => candidate.word)),
+        correctAnswer: item.word,
+        explanation: `看到中文释义时，需要能反向回忆出 ${item.word}。`
+      };
+    }
+
+    return {
       id: `q_${item.id}_meaning_${index}`,
       itemId: item.id,
       wordId: item.id,
@@ -249,27 +273,8 @@ export function generatePracticeQuestions(items: Word[], allItems: Word[]): Prac
       options: buildOptions(item.meaningCn, allItems.map((candidate) => candidate.meaningCn)),
       correctAnswer: item.meaningCn,
       explanation: `在 ${item.scenarioTags[0] ?? "当前场景"} 中，${item.word} 常表示“${item.meaningCn}”。`
-    },
-    {
-      id: `q_${item.id}_recognition_${index}`,
-      itemId: item.id,
-      wordId: item.id,
-      questionType: "select_word",
-      prompt: item.meaningCn,
-      options: buildOptions(item.word, allItems.map((candidate) => candidate.word)),
-      correctAnswer: item.word,
-      explanation: `看到中文释义时，需要能反向回忆出 ${item.word}。`
-    },
-    {
-      id: `q_${item.id}_spelling_${index}`,
-      itemId: item.id,
-      wordId: item.id,
-      questionType: "spelling",
-      prompt: item.meaningCn,
-      correctAnswer: item.word,
-      explanation: `拼写训练会影响写作和听口输入后的记录准确率。`
-    }
-  ]);
+    };
+  });
 }
 
 export function checkPracticeAnswer({ userId, question, answer, state, now = new Date(), responseTime = 6, sessionId = `session_${toDateKey(now)}`, usedHint = false }: CheckAnswerInput) {
@@ -458,11 +463,35 @@ export function generateLearningReport({ userId, task, records, states, wrongWor
   const totalActions = Math.max(1, task.newItemIds.length + task.reviewItemIds.length + task.wrongItemIds.length);
   const taskCompletionRate = Math.min(100, Math.round((completedActions / totalActions) * 100));
   const suggestion =
-    accuracyRate >= 85
-      ? "表现稳定，下一轮可以增加新词，并保留少量错词复盘。"
-      : wrongItemsCount > 2
-        ? "先做错词强化，尤其关注拼写和中英互认，再进入新词。"
-        : "继续完成到期复习，保持每天 10-15 分钟的学习节奏。";
+    accuracyRate < 60
+      ? "明天建议减少新词，增加复习，把错词先稳定下来。"
+      : wrongItemsCount > Math.max(1, Math.round(task.newItemIds.length * 0.3))
+        ? "错词比例偏高，建议先完成错词强化，再继续新增词。"
+        : weakQuestionTypes.includes("spelling")
+          ? "拼写错误偏多，下一轮建议增加拼写输入训练。"
+          : accuracyRate >= 85
+            ? "表现稳定，下一轮可以维持节奏或少量增加新词。"
+            : "继续完成到期复习，保持每天 10-20 分钟的学习节奏。";
+  const pointsEarned = Math.min(
+    80,
+    (task.newItemIds.length ? 10 : 0) +
+      (task.reviewItemIds.length ? 10 : 0) +
+      (task.wrongItemIds.length ? 10 : 0) +
+      (task.status === "completed" ? 20 : 0) +
+      (accuracyRate >= 85 ? 10 : 0) +
+      (wrongItemsCount === 0 ? 10 : 0) +
+      15
+  );
+  const totalPoints = 260 + pointsEarned;
+  const levelName = getPointLevel(totalPoints);
+  const adjustmentAdvice =
+    accuracyRate < 60
+      ? "明日新词减少 50%，复习和错词强化优先。"
+      : accuracyRate < 75
+        ? "明日新词减少 25%，保留当前复习量。"
+        : accuracyRate <= 85
+          ? "维持计划，继续观察错词比例。"
+          : "可维持当前计划，或在连续完成后增加 10% 新词。";
 
   return {
     id: `report_${userId}_${period}_${date}`,
@@ -479,6 +508,13 @@ export function generateLearningReport({ userId, task, records, states, wrongWor
     weakQuestionTypes,
     weakItems,
     suggestion,
+    studentName: "Remix",
+    streakDays: 3,
+    pointsEarned,
+    totalPoints,
+    levelName,
+    badgeName: "今日完成",
+    adjustmentAdvice,
     createdAt: new Date().toISOString(),
     date,
     newWordsCount: task.newItemIds.length,
@@ -489,12 +525,22 @@ export function generateLearningReport({ userId, task, records, states, wrongWor
 }
 
 export function adjustStudyPlan(plan: StudyPlan, report: LearningReport, now = new Date()): StudyPlan {
-  const tooManyWrong = report.wrongItemsCount >= 4 || report.accuracyRate < 70;
-  const nextDailyNewItems = tooManyWrong ? Math.max(4, plan.dailyNewItems - 2) : report.accuracyRate >= 90 ? plan.dailyNewItems + 2 : plan.dailyNewItems;
+  const wrongRatio = report.newItemsCount ? report.wrongItemsCount / report.newItemsCount : 0;
+  const reviewOverload = report.reviewedItemsCount > plan.dailyReviewLimit;
+  const nextDailyNewItems =
+    reviewOverload
+      ? 0
+      : report.accuracyRate < 60
+        ? Math.max(4, Math.round(plan.dailyNewItems * 0.5))
+        : report.accuracyRate < 75
+          ? Math.max(4, Math.round(plan.dailyNewItems * 0.75))
+          : report.accuracyRate > 85
+            ? Math.ceil(plan.dailyNewItems * 1.1)
+            : plan.dailyNewItems;
   return {
     ...plan,
     dailyNewItems: nextDailyNewItems,
-    dailyReviewLimit: tooManyWrong ? plan.dailyReviewLimit + 3 : plan.dailyReviewLimit,
+    dailyReviewLimit: wrongRatio > 0.3 || report.accuracyRate < 75 ? plan.dailyReviewLimit + 3 : plan.dailyReviewLimit,
     version: plan.version + 1,
     updatedAt: now.toISOString()
   };
@@ -529,7 +575,7 @@ function resolveNextStatus(current: UserWordState["status"], isCorrect: boolean,
     if (continuousWrongCount >= 2) return "learning";
     return "wrong";
   }
-  if (masteryScore >= 90 || continuousCorrectCount >= 3) return "mastered";
+  if (masteryScore >= 92 || continuousCorrectCount >= 4) return "mastered";
   if (current === "wrong" || current === "weak") return "reviewing";
   return "reviewing";
 }
@@ -561,4 +607,12 @@ function unique<T>(values: T[]) {
 
 function clamp(value: number) {
   return Math.max(0, Math.min(100, value));
+}
+
+function getPointLevel(points: number) {
+  if (points >= 2000) return "Lv.5 高阶学习者";
+  if (points >= 1000) return "Lv.4 词汇达人";
+  if (points >= 500) return "Lv.3 词汇进阶者";
+  if (points >= 200) return "Lv.2 稳定学习者";
+  return "Lv.1 词汇新手";
 }
